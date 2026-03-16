@@ -344,7 +344,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);dis
     <!-- header com saldo base -->
     <div style="background:linear-gradient(135deg,#1a2040,#12192e);border:1px solid rgba(91,158,255,.15);border-radius:14px;padding:14px 16px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between">
       <div>
-        <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:4px">Base do orçamento</div>
+        <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:4px">Saldo disponível</div>
         <div style="font-family:var(--mono);font-size:18px;font-weight:600;color:var(--blue)" id="budget-base-val">R$ 0,00</div>
         <div style="font-size:11px;color:var(--muted);margin-top:2px" id="budget-base-lbl">Saldo do mês atual</div>
       </div>
@@ -1362,11 +1362,12 @@ function renderPlanRegra(){
   const curInc=curTxs.filter(t=>t.type==='income').reduce((s,t)=>s+t.val,0);
   const curExp=curTxs.filter(t=>t.type==='expense').reduce((s,t)=>s+t.val,0);
   const curBal=curInc-curExp;
-  const baseSaldo=curInc>0?curInc:0;
+  // base SEMPRE é o saldo (receita - despesas). Se negativo, zero.
+  const baseSaldo=Math.max(0,curBal);
 
   document.getElementById('budget-base-val').textContent=fmt(baseSaldo);
   document.getElementById('budget-base-lbl').textContent=
-    baseSaldo>0?`Receita de ${MONTHS[curM]} ${curY} · Saldo: ${fmt(curBal)}`:`Sem receita em ${MONTHS[curM]} ${curY}`;
+    `${MONTHS[curM]} ${curY}  ·  Receita ${fmt(curInc)}  −  Despesas ${fmt(curExp)}`;
 
   const totalPct=budgetItems.reduce((s,b)=>s+b.pct,0);
   const totalAlloc=baseSaldo*(totalPct/100);
