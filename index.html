@@ -1314,60 +1314,95 @@ function _renderPlanTotals(){
 /* ── PLAN: 30/30/40 ── */
 function renderPlanRegra(){
   const res=_renderPlanTotals();if(!res)return;
-  const{tI,tE,tB,monthMap,months}=res;
+  const{tI,tE,tB}=res;
 
-  // Map 30/30/40 categories to actual spending categories
-  const CAT_MAP={
-    ess:['Moradia','Contas','Alimentação','Transporte'],
-    inv:[], // investimento não tem categoria de despesa — é o que sobra
-    pess:['Lazer','Saúde','Roupas','Educação','Outros']
-  };
+  // Usar dados do MÊS ATUAL para comparação real vs planejado
+  const curTxs=txData.filter(t=>t.month===curKey());
+  const curInc=curTxs.filter(t=>t.type==='income').reduce((s,t)=>s+t.val,0);
+  const curExp=curTxs.filter(t=>t.type==='expense').reduce((s,t)=>s+t.val,0);
+  const curBal=curInc-curExp;
 
-  // Sum actual expenses per bucket across all months
-  function bucketSpent(cats){
-    return txData.filter(t=>t.type==='expense'&&cats.includes(t.cat||'Outros')).reduce((s,t)=>s+t.val,0);
+  // base = receita do mês atual (ou média mensal se mês sem receita)
+  const monthCount=Object.keys(res.monthMap).length||1;
+  const avgInc=tI/monthCount;
+  const baseInc=curInc>0?curInc:avgInc;
+
+  // Gastos do mês atual por bucket
+  const CAT_ESS=['Moradia','Contas','Alimentação','Transporte'];
+  const CAT_PESS=['Lazer','Saúde','Roupas','Educação','Outros'];
+
+  function curBucketSpent(cats){
+    return curTxs.filter(t=>t.type==='expense'&&cats.includes(t.cat||'Outros')).reduce((s,t)=>s+t.val,0);
   }
-  const spentEss=bucketSpent(CAT_MAP.ess);
-  const spentPess=bucketSpent(CAT_MAP.pess);
-  const spentTotal=tE; // total expenses
+  const spentEss=curBucketSpent(CAT_ESS);
+  const spentPess=curBucketSpent(CAT_PESS);
+  // Investir = receita - essencial - pessoal do mês atual (o que sobrou de fato)
+  const spentInv=Math.max(0,curInc-curExp); // saldo positivo = potencial investimento
 
   const ruleTitle={'303040':'Distribuição 30/30/40','505020':'Distribuição 50/20/30','custom':'Distribuição personalizada'};
   document.getElementById('plan-rule-title').textContent=ruleTitle[activePlanRule]||'Distribuição';
+  const MN=MONTHS[curM]+' '+curY;
   document.getElementById('plan-rule-sub').textContent=
-    `Receita total: ${fmt(tI)} · Despesas: ${fmt(tE)} · Saldo: ${fmt(tB)}`;
+    `Receita ${MN}: ${fmt(curInc)} · Despesas: ${fmt(curExp)} · Saldo: ${fmt(curBal)}`;
 
   const ruleRows=[
-    {key:'ess',label:'Essencial',sub:'Moradia, Contas, Alimentação, Transporte',pct:planRule.ess,color:'var(--green)',ico:'🏠',spent:spentEss},
-    {key:'inv',label:'Investir / Poupar',sub:'O que sobra após essencial + pessoal',pct:planRule.inv,color:'var(--blue)',ico:'💎',spent:Math.max(0,tB)},
-    {key:'pess',label:'Pessoal / Lazer',sub:'Lazer, Saúde, Roupas, Educação, Outros',pct:planRule.pess,color:'var(--purple)',ico:'🎉',spent:spentPess},
+    {
+      label:'Essencial',
+      sub:'Moradia, Contas, Alimentação, Transporte',
+      pct:planRule.ess,color:'var(--green)',ico:'🏠',
+      spent:spentEss,
+      note:'gastos essenciais do mês'
+    },
+    {
+      label:'Investir / Poupar',
+      sub:'Quanto da receita deve ser poupado',
+      pct:planRule.inv,color:'var(--blue)',ico:'💎',
+      spent:spentInv,
+      isInv:true,
+      note:'saldo disponível para investir'
+    },
+    {
+      label:'Pessoal / Lazer',
+      sub:'Lazer, Saúde, Roupas, Educação, Outros',
+      pct:planRule.pess,color:'var(--purple)',ico:'🎉',
+      spent:spentPess,
+      note:'gastos pessoais do mês'
+    },
   ];
 
   document.getElementById('plan-rule-rows').innerHTML=ruleRows.map(r=>{
-    const target=tI*(r.pct/100);
-    const usedPct=target>0?Math.min(100,(r.spent/target)*100):0;
-    const over=r.spent>target;
-    const barColor=over?'var(--red)':usedPct>85?'var(--amber)':r.color;
-    const statusTxt=over
-      ? `⚠️ ${fmt(r.spent - target)} acima do limite`
-      : `Restam ${fmt(target - r.spent)}`;
-    const statusColor=over?'var(--red)':usedPct>85?'var(--amber)':'var(--muted)';
+    const target=baseInc*(r.pct/100);
+    const usedPct=target>0?Math.min(130,(r.spent/target)*100):0; // allow >100 to show red
+    const over=!r.isInv&&r.spent>target;
+    const under=r.isInv&&r.spent<target; // investindo menos do que deveria
+    const barFill=Math.min(100,usedPct);
+    const barColor=over?'var(--red)':under?'var(--amber)':usedPct>85&&!r.isInv?'var(--amber)':r.color;
+    let statusTxt, statusColor;
+    if(r.isInv){
+      // for invest: show how much you HAVE available vs target
+      statusTxt=r.spent>=target?`✅ Meta atingida! +${fmt(r.spent-target)} extra`:`Faltam poupar ${fmt(target-r.spent)}`;
+      statusColor=r.spent>=target?'var(--green)':'var(--amber)';
+    }else{
+      statusTxt=over?`⚠️ ${fmt(r.spent-target)} acima do limite`:`Restam ${fmt(target-r.spent)}`;
+      statusColor=over?'var(--red)':usedPct>85?'var(--amber)':'var(--muted)';
+    }
     return`<div class="plan-rule-row">
       <div class="plan-rule-ico" style="background:${r.color}22">${r.ico}</div>
       <div style="flex:1;min-width:0">
         <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:2px">
           <span style="font-size:13px;font-weight:600">${r.label}</span>
-          <span style="font-family:var(--mono);font-size:12px;color:${r.color};font-weight:600">${fmt(target)}</span>
+          <span style="font-family:var(--mono);font-size:12px;color:${r.color};font-weight:600">Meta: ${fmt(target)}</span>
         </div>
-        <div style="font-size:10px;color:var(--muted);margin-bottom:6px">${r.sub} · ${r.pct}% da receita</div>
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+        <div style="font-size:10px;color:var(--muted);margin-bottom:7px">${r.sub} · ${r.pct}% de ${fmt(baseInc)}</div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px">
           <div style="flex:1;height:7px;background:var(--border);border-radius:99px;overflow:hidden">
-            <div style="height:7px;border-radius:99px;background:${barColor};width:${usedPct.toFixed(0)}%;transition:width .6s ease;${over?'box-shadow:0 0 6px rgba(255,92,92,.5)':''}"></div>
+            <div style="height:7px;border-radius:99px;background:${barColor};width:${barFill.toFixed(0)}%;transition:width .7s ease;${over?'box-shadow:0 0 8px rgba(255,92,92,.5)':''}"></div>
           </div>
-          <span style="font-family:var(--mono);font-size:10px;font-weight:600;color:${barColor};min-width:30px;text-align:right">${usedPct.toFixed(0)}%</span>
+          <span style="font-family:var(--mono);font-size:10px;font-weight:600;color:${barColor};min-width:32px;text-align:right">${usedPct.toFixed(0)}%</span>
         </div>
         <div style="display:flex;justify-content:space-between;font-size:10px">
-          <span style="color:var(--muted2)">Gasto: <b style="font-family:var(--mono);color:${barColor}">${fmt(r.spent)}</b></span>
-          <span style="color:${statusColor}">${statusTxt}</span>
+          <span style="color:var(--muted2)">${r.isInv?'Disponível':'Gasto'}: <b style="font-family:var(--mono);color:${barColor}">${fmt(r.spent)}</b></span>
+          <span style="color:${statusColor};font-weight:600">${statusTxt}</span>
         </div>
       </div>
     </div>`;
