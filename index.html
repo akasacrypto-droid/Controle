@@ -397,6 +397,87 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);dis
 
 </div>
 
+<!-- ── PAGE: ALERTAS ── -->
+<div class="page" id="page-notif">
+  <div class="slbl">Lembrete diário</div>
+  <div class="card" style="margin-bottom:12px">
+    <div class="notif-row">
+      <div class="notif-info">
+        <div class="ntitle">Lembrar de registrar gastos</div>
+        <div class="nsub">Notificação diária no horário escolhido</div>
+      </div>
+      <label class="toggle-wrap">
+        <input type="checkbox" id="notif-toggle" onchange="toggleNotif()"/>
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+    <div class="notif-time-row">
+      <label>Horário do lembrete</label>
+      <input type="time" id="notif-time" value="20:00" onchange="saveNotifTime()"/>
+    </div>
+    <div class="notif-row">
+      <div class="notif-info">
+        <div class="ntitle">Sons do app</div>
+        <div class="nsub">Efeitos sonoros nos lançamentos</div>
+      </div>
+      <label class="toggle-wrap">
+        <input type="checkbox" id="sound-toggle" checked onchange="toggleSound()"/>
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+    <div class="notif-row" style="border-bottom:none">
+      <div class="notif-info">
+        <div class="ntitle">Status notificações</div>
+        <div class="nsub" id="notif-status">Notificações desativadas</div>
+      </div>
+      <button onclick="testNotif()" style="background:var(--blue-bg);border:1px solid rgba(91,158,255,.25);color:var(--blue);border-radius:8px;padding:7px 14px;font-size:12px;font-family:'DM Sans',sans-serif;cursor:pointer">Testar</button>
+    </div>
+  </div>
+
+  <div class="slbl">Como funciona</div>
+  <div class="card" style="margin-bottom:12px">
+    <div style="padding:16px;font-size:13px;color:var(--muted2);line-height:1.7">
+      <p style="margin-bottom:6px">1️⃣ Ative o toggle acima e escolha o horário</p>
+      <p style="margin-bottom:6px">2️⃣ Permita notificações quando o navegador perguntar</p>
+      <p style="margin-bottom:6px">3️⃣ Adicione o app na tela inicial para melhor experiência</p>
+      <p style="color:var(--muted);font-size:12px;margin-top:8px">⚠️ O app precisa estar aberto em segundo plano para enviar notificações.</p>
+    </div>
+  </div>
+
+  <div class="slbl">Backup dos dados</div>
+  <div class="card" style="margin-bottom:12px">
+    <div class="notif-row" style="border-bottom:none;padding-bottom:6px">
+      <div class="notif-info">
+        <div class="ntitle">Exportar dados</div>
+        <div class="nsub" id="export-sub">Salva todos os lançamentos em um arquivo</div>
+      </div>
+      <button onclick="exportData()" style="background:var(--green-bg);border:1px solid rgba(0,200,150,.25);color:var(--green);border-radius:8px;padding:8px 14px;font-size:12px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:5px">⬇️ Exportar</button>
+    </div>
+    <div style="height:1px;background:var(--border);margin:0 16px"></div>
+    <div class="notif-row" style="border-bottom:none;padding-top:6px">
+      <div class="notif-info">
+        <div class="ntitle">Importar dados</div>
+        <div class="nsub">Carrega lançamentos de um arquivo exportado</div>
+      </div>
+      <label style="background:var(--blue-bg);border:1px solid rgba(91,158,255,.25);color:var(--blue);border-radius:8px;padding:8px 14px;font-size:12px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:5px">
+        ⬆️ Importar
+        <input type="file" id="import-input" accept=".json" onchange="importData(event)" style="display:none"/>
+      </label>
+    </div>
+  </div>
+
+  <div class="slbl">Zona de perigo</div>
+  <div class="card">
+    <div class="notif-row" style="border-bottom:none">
+      <div class="notif-info">
+        <div class="ntitle" style="color:var(--red)">Apagar todos os dados</div>
+        <div class="nsub">Remove todos os lançamentos permanentemente</div>
+      </div>
+      <button onclick="clearAllData()" style="background:var(--red-bg);border:1px solid rgba(255,92,92,.25);color:var(--red);border-radius:8px;padding:8px 14px;font-size:12px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer">🗑️ Limpar</button>
+    </div>
+  </div>
+</div>
+
 <!-- FAB -->
 <button class="fab" onclick="openSheet()" id="fab">＋</button>
 
