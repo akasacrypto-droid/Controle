@@ -205,6 +205,13 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);dis
 .toast{position:fixed;top:calc(var(--safe-top) + 70px);left:50%;transform:translateX(-50%) translateY(-10px);background:var(--s1);border:1px solid var(--border2);border-radius:12px;padding:10px 18px;font-size:13px;z-index:999;opacity:0;transition:all .3s;pointer-events:none;white-space:nowrap;box-shadow:0 4px 20px rgba(0,0,0,.4)}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 
+/* BUDGET CAT SELECTOR */
+.bfcat{padding:5px 10px;border-radius:99px;border:1px solid var(--border2);background:none;color:var(--muted);font-size:11px;font-family:'DM Sans',sans-serif;cursor:pointer;transition:all .15s;white-space:nowrap}
+.bfcat.on{background:var(--green-bg);border-color:rgba(0,200,150,.35);color:var(--green);font-weight:600}
+/* BUDGET ROW */
+.budget-row{display:flex;align-items:center;gap:10px;padding:13px 14px;border-bottom:1px solid var(--border);background:var(--s1)}
+.budget-row:last-child{border-bottom:none}
+.budget-row:first-child{border-radius:14px 14px 0 0}
 /* PLAN SUB TABS */
 .plan-sub-tab{padding:8px 14px;border-radius:10px;border:1px solid var(--border2);background:none;color:var(--muted);font-size:12px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;white-space:nowrap;transition:all .18s;flex-shrink:0}
 .plan-sub-tab.on{background:var(--green-bg);border-color:rgba(0,200,150,.35);color:var(--green)}
@@ -331,41 +338,38 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);dis
     </div>
   </div>
 
-  <!-- ── SUB: 30/30/40 ── -->
+  <!-- ── SUB: ORÇAMENTO ── -->
   <div id="planpage-regra" style="display:none">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-      <div class="slbl" style="margin:0">Regra de distribuição</div>
-      <div style="display:flex;gap:6px">
-        <button onclick="setPlanRule('303040')" id="rule-btn-303040" style="font-size:11px;padding:4px 10px;border-radius:99px;border:1px solid rgba(0,200,150,.35);background:var(--green-bg);color:var(--green);font-family:'DM Sans',sans-serif;cursor:pointer;font-weight:600">30/30/40</button>
-        <button onclick="setPlanRule('505020')" id="rule-btn-505020" style="font-size:11px;padding:4px 10px;border-radius:99px;border:1px solid var(--border2);background:none;color:var(--muted);font-family:'DM Sans',sans-serif;cursor:pointer">50/20/30</button>
-        <button onclick="setPlanRule('custom')" id="rule-btn-custom" style="font-size:11px;padding:4px 10px;border-radius:99px;border:1px solid var(--border2);background:none;color:var(--muted);font-family:'DM Sans',sans-serif;cursor:pointer">✏️</button>
+
+    <!-- header com saldo base -->
+    <div style="background:linear-gradient(135deg,#1a2040,#12192e);border:1px solid rgba(91,158,255,.15);border-radius:14px;padding:14px 16px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between">
+      <div>
+        <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:4px">Base do orçamento</div>
+        <div style="font-family:var(--mono);font-size:18px;font-weight:600;color:var(--blue)" id="budget-base-val">R$ 0,00</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px" id="budget-base-lbl">Saldo do mês atual</div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:10px;color:var(--muted);margin-bottom:4px">Alocado</div>
+        <div style="font-family:var(--mono);font-size:16px;font-weight:600" id="budget-alloc-pct">0%</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px" id="budget-alloc-val">R$ 0,00</div>
       </div>
     </div>
-    <div id="plan-custom-box" style="display:none;background:var(--s1);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:12px">
-      <div style="font-size:12px;color:var(--muted2);margin-bottom:10px">Ajuste os percentuais (soma deve ser 100%)</div>
-      <div style="display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:center;margin-bottom:8px">
-        <span style="font-size:12px;color:var(--green);width:80px">Essencial</span>
-        <input type="range" id="slider-ess" min="0" max="100" value="30" oninput="updateSliders('ess')" style="accent-color:var(--green)">
-        <span style="font-size:12px;font-family:var(--mono);color:var(--text);width:35px;text-align:right" id="val-ess">30%</span>
-      </div>
-      <div style="display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:center;margin-bottom:8px">
-        <span style="font-size:12px;color:var(--blue);width:80px">Investir</span>
-        <input type="range" id="slider-inv" min="0" max="100" value="30" oninput="updateSliders('inv')" style="accent-color:var(--blue)">
-        <span style="font-size:12px;font-family:var(--mono);color:var(--text);width:35px;text-align:right" id="val-inv">30%</span>
-      </div>
-      <div style="display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:center">
-        <span style="font-size:12px;color:var(--purple);width:80px">Pessoal</span>
-        <input type="range" id="slider-pess" min="0" max="100" value="40" oninput="updateSliders('pess')" style="accent-color:var(--purple)">
-        <span style="font-size:12px;font-family:var(--mono);color:var(--text);width:35px;text-align:right" id="val-pess">40%</span>
-      </div>
-      <div style="margin-top:8px;font-size:11px;text-align:center" id="slider-sum-warn"></div>
+
+    <!-- lista de categorias configuradas -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+      <div class="slbl" style="margin:0">Categorias do orçamento</div>
+      <button onclick="openBudgetAddSheet()" style="font-size:11px;padding:5px 12px;border-radius:99px;border:1px solid rgba(0,200,150,.35);background:var(--green-bg);color:var(--green);font-family:'DM Sans',sans-serif;cursor:pointer;font-weight:600">+ Adicionar</button>
     </div>
-    <div style="background:var(--s1);border:1px solid var(--border);border-radius:16px;overflow:hidden;margin-bottom:12px">
-      <div style="padding:14px 16px;border-bottom:1px solid var(--border)">
-        <div style="font-size:13px;font-weight:600" id="plan-rule-title">Distribuição 30/30/40 da receita</div>
-        <div style="font-size:11px;color:var(--muted);margin-top:2px" id="plan-rule-sub">Baseado na receita total acumulada</div>
+
+    <div id="budget-list">
+      <div style="background:var(--s1);border:1px solid var(--border);border-radius:14px;padding:20px;text-align:center;color:var(--muted);font-size:13px">
+        Nenhuma categoria configurada.<br><span style="font-size:12px">Toque em "+ Adicionar" para começar.</span>
       </div>
-      <div id="plan-rule-rows"></div>
+    </div>
+
+    <div style="background:var(--s1);border:1px solid var(--border);border-radius:14px;padding:12px 14px;margin-top:10px" id="budget-remaining-card" style="display:none">
+      <div style="font-size:11px;color:var(--muted);margin-bottom:4px">Não alocado / Livre</div>
+      <div style="font-family:var(--mono);font-size:16px;font-weight:600" id="budget-free-val">—</div>
     </div>
   </div>
 
@@ -476,6 +480,46 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);dis
       <button onclick="clearAllData()" style="background:var(--red-bg);border:1px solid rgba(255,92,92,.25);color:var(--red);border-radius:8px;padding:8px 14px;font-size:12px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer">🗑️ Limpar</button>
     </div>
   </div>
+</div>
+
+<!-- BUDGET ADD SHEET -->
+<div class="sheet-overlay" id="budget-overlay" onclick="closeBudgetAddSheet()"></div>
+<div class="sheet" id="budget-sheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-title" id="budget-sheet-title">Nova categoria</div>
+  <div class="field">
+    <label>Nome</label>
+    <input type="text" id="bf-name" placeholder="Ex: Alimentação, Gasolina, Roupa…" autocomplete="off"/>
+  </div>
+  <div class="field">
+    <label>Emoji / ícone</label>
+    <input type="text" id="bf-ico" placeholder="🛒" maxlength="2"/>
+  </div>
+  <div class="field">
+    <label>% do saldo mensal</label>
+    <div style="display:flex;align-items:center;gap:10px">
+      <input type="range" id="bf-pct-range" min="0" max="100" value="10" oninput="document.getElementById('bf-pct').value=this.value" style="flex:1;accent-color:var(--green)">
+      <input type="number" id="bf-pct" value="10" min="0" max="100" style="width:60px;padding:8px;background:var(--s2);border:1px solid var(--border2);border-radius:8px;color:var(--text);font-size:14px;font-family:'DM Mono',monospace;text-align:center;outline:none" oninput="document.getElementById('bf-pct-range').value=this.value"/>
+      <span style="font-size:14px;color:var(--muted)">%</span>
+    </div>
+  </div>
+  <div class="field">
+    <label>Categorias de despesa vinculadas</label>
+    <div id="bf-cats" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px">
+      <button type="button" class="bfcat" data-cat="Moradia" onclick="toggleBfCat(this)">🏠 Moradia</button>
+      <button type="button" class="bfcat" data-cat="Alimentação" onclick="toggleBfCat(this)">🛒 Alimentação</button>
+      <button type="button" class="bfcat" data-cat="Transporte" onclick="toggleBfCat(this)">🚗 Transporte</button>
+      <button type="button" class="bfcat" data-cat="Saúde" onclick="toggleBfCat(this)">💊 Saúde</button>
+      <button type="button" class="bfcat" data-cat="Lazer" onclick="toggleBfCat(this)">🎬 Lazer</button>
+      <button type="button" class="bfcat" data-cat="Educação" onclick="toggleBfCat(this)">📚 Educação</button>
+      <button type="button" class="bfcat" data-cat="Roupas" onclick="toggleBfCat(this)">👗 Roupas</button>
+      <button type="button" class="bfcat" data-cat="Contas" onclick="toggleBfCat(this)">📱 Contas</button>
+      <button type="button" class="bfcat" data-cat="Outros" onclick="toggleBfCat(this)">💸 Outros</button>
+    </div>
+    <div style="font-size:11px;color:var(--muted);margin-top:6px">Selecione quais categorias de gasto contam para esta linha</div>
+  </div>
+  <button class="sheet-save" onclick="saveBudgetItem()">Salvar</button>
+  <button class="sheet-cancel" onclick="closeBudgetAddSheet()">Cancelar</button>
 </div>
 
 <!-- FAB -->
@@ -1311,102 +1355,77 @@ function _renderPlanTotals(){
   return{monthMap,months,tI,tE,tB};
 }
 
-/* ── PLAN: 30/30/40 ── */
+/* ── PLAN: ORÇAMENTO ── */
 function renderPlanRegra(){
-  const res=_renderPlanTotals();if(!res)return;
-  const{tI,tE,tB}=res;
-
-  // Usar dados do MÊS ATUAL para comparação real vs planejado
+  const res=_renderPlanTotals();
   const curTxs=txData.filter(t=>t.month===curKey());
   const curInc=curTxs.filter(t=>t.type==='income').reduce((s,t)=>s+t.val,0);
   const curExp=curTxs.filter(t=>t.type==='expense').reduce((s,t)=>s+t.val,0);
   const curBal=curInc-curExp;
+  const baseSaldo=curInc>0?curInc:0;
 
-  // base = SALDO do mês atual (receita - despesas) = o que realmente tem disponível
-  const monthCount=Object.keys(res.monthMap).length||1;
-  const avgBal=(tI-tE)/monthCount;
-  const baseSaldo=curBal>0?curBal:(avgBal>0?avgBal:curInc>0?curInc:tI/monthCount);
+  document.getElementById('budget-base-val').textContent=fmt(baseSaldo);
+  document.getElementById('budget-base-lbl').textContent=
+    baseSaldo>0?`Receita de ${MONTHS[curM]} ${curY} · Saldo: ${fmt(curBal)}`:`Sem receita em ${MONTHS[curM]} ${curY}`;
 
-  // Gastos do mês atual por bucket
-  const CAT_ESS=['Moradia','Contas','Alimentação','Transporte'];
-  const CAT_PESS=['Lazer','Saúde','Roupas','Educação','Outros'];
+  const totalPct=budgetItems.reduce((s,b)=>s+b.pct,0);
+  const totalAlloc=baseSaldo*(totalPct/100);
+  const pctEl=document.getElementById('budget-alloc-pct');
+  pctEl.textContent=totalPct+'%';
+  pctEl.style.color=totalPct>100?'var(--red)':totalPct===100?'var(--green)':'var(--amber)';
+  document.getElementById('budget-alloc-val').textContent=fmt(totalAlloc);
 
-  function curBucketSpent(cats){
-    return curTxs.filter(t=>t.type==='expense'&&cats.includes(t.cat||'Outros')).reduce((s,t)=>s+t.val,0);
+  const freePct=100-totalPct;
+  const freeVal=baseSaldo-totalAlloc;
+  const freeEl=document.getElementById('budget-free-val');
+  if(freeEl){
+    freeEl.textContent=freePct>0?`${freePct}% livre — ${fmt(freeVal)}`:(freePct===0?'✅ 100% alocado':'⚠️ '+Math.abs(freePct)+'% acima de 100%');
+    freeEl.style.color=freePct>0?'var(--muted2)':freePct===0?'var(--green)':'var(--red)';
   }
-  const spentEss=curBucketSpent(CAT_ESS);
-  const spentPess=curBucketSpent(CAT_PESS);
-  // Investir = receita - essencial - pessoal do mês atual (o que sobrou de fato)
-  const spentInv=Math.max(0,curInc-curExp); // saldo positivo = potencial investimento
 
-  const ruleTitle={'303040':'Distribuição 30/30/40','505020':'Distribuição 50/20/30','custom':'Distribuição personalizada'};
-  document.getElementById('plan-rule-title').textContent=ruleTitle[activePlanRule]||'Distribuição';
-  const MN=MONTHS[curM]+' '+curY;
-  document.getElementById('plan-rule-sub').textContent=
-    `Base: Saldo de ${MN} — ${fmt(baseSaldo)} · Receita: ${fmt(curInc)} · Despesas: ${fmt(curExp)}`;
+  const list=document.getElementById('budget-list');
+  if(!budgetItems.length){
+    list.innerHTML='<div style="background:var(--s1);border:1px solid var(--border);border-radius:14px;padding:20px;text-align:center;color:var(--muted);font-size:13px">Nenhuma categoria configurada.<br><span style=\"font-size:12px\">Toque em \"+ Adicionar\" para começar.</span></div>';
+    return;
+  }
 
-  const ruleRows=[
-    {
-      label:'Essencial',
-      sub:'Moradia, Contas, Alimentação, Transporte',
-      pct:planRule.ess,color:'var(--green)',ico:'🏠',
-      spent:spentEss,
-      note:'gastos essenciais do mês'
-    },
-    {
-      label:'Investir / Poupar',
-      sub:'Quanto da receita deve ser poupado',
-      pct:planRule.inv,color:'var(--blue)',ico:'💎',
-      spent:spentInv,
-      isInv:true,
-      note:'saldo disponível para investir'
-    },
-    {
-      label:'Pessoal / Lazer',
-      sub:'Lazer, Saúde, Roupas, Educação, Outros',
-      pct:planRule.pess,color:'var(--purple)',ico:'🎉',
-      spent:spentPess,
-      note:'gastos pessoais do mês'
-    },
-  ];
-
-  document.getElementById('plan-rule-rows').innerHTML=ruleRows.map(r=>{
-    const target=baseSaldo*(r.pct/100);
-    const usedPct=target>0?Math.min(130,(r.spent/target)*100):0; // allow >100 to show red
-    const over=!r.isInv&&r.spent>target;
-    const under=r.isInv&&r.spent<target; // investindo menos do que deveria
-    const barFill=Math.min(100,usedPct);
-    const barColor=over?'var(--red)':under?'var(--amber)':usedPct>85&&!r.isInv?'var(--amber)':r.color;
-    let statusTxt, statusColor;
-    if(r.isInv){
-      // for invest: show how much you HAVE available vs target
-      statusTxt=r.spent>=target?`✅ Meta atingida! +${fmt(r.spent-target)} extra`:`Faltam poupar ${fmt(target-r.spent)}`;
-      statusColor=r.spent>=target?'var(--green)':'var(--amber)';
-    }else{
-      statusTxt=over?`⚠️ ${fmt(r.spent-target)} acima do limite`:`Restam ${fmt(target-r.spent)}`;
-      statusColor=over?'var(--red)':usedPct>85?'var(--amber)':'var(--muted)';
-    }
-    return`<div class="plan-rule-row">
-      <div class="plan-rule-ico" style="background:${r.color}22">${r.ico}</div>
-      <div style="flex:1;min-width:0">
-        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:2px">
-          <span style="font-size:13px;font-weight:600">${r.label}</span>
-          <span style="font-family:var(--mono);font-size:12px;color:${r.color};font-weight:600">Meta: ${fmt(target)}</span>
-        </div>
-        <div style="font-size:10px;color:var(--muted);margin-bottom:7px">${r.sub} · ${r.pct}% de ${fmt(baseSaldo)}</div>
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px">
-          <div style="flex:1;height:7px;background:var(--border);border-radius:99px;overflow:hidden">
-            <div style="height:7px;border-radius:99px;background:${barColor};width:${barFill.toFixed(0)}%;transition:width .7s ease;${over?'box-shadow:0 0 8px rgba(255,92,92,.5)':''}"></div>
+  const PAL_L=['#00C896','#5B9EFF','#FFB84D','#FF8C69','#C084FC','#60D9F5','#FF7EAA','#7DD3B0','#FFC857','#A8DADC'];
+  list.innerHTML='<div style="background:var(--s1);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:10px">'+
+    budgetItems.map((b,idx)=>{
+      const color=PAL_L[idx%PAL_L.length];
+      const target=baseSaldo*(b.pct/100);
+      const spent=curTxs.filter(t=>t.type==='expense'&&b.cats.includes(t.cat||'Outros')).reduce((s,t)=>s+t.val,0);
+      const usedPct=target>0?Math.min(130,(spent/target)*100):0;
+      const barW=Math.min(100,usedPct);
+      const over=spent>target&&target>0;
+      const barColor=over?'var(--red)':usedPct>85?'var(--amber)':color;
+      const rem=target-spent;
+      return`<div class="budget-row">
+        <div style="width:34px;height:34px;border-radius:10px;background:${color}22;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">${b.ico||'💰'}</div>
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:2px">
+            <span style="font-size:13px;font-weight:600">${b.name}</span>
+            <span style="font-family:var(--mono);font-size:12px;font-weight:600;color:${color}">${fmt(target)}</span>
           </div>
-          <span style="font-family:var(--mono);font-size:10px;font-weight:600;color:${barColor};min-width:32px;text-align:right">${usedPct.toFixed(0)}%</span>
+          <div style="font-size:10px;color:var(--muted);margin-bottom:6px">${b.pct}% de ${fmt(baseSaldo)}${b.cats.length?' · '+b.cats.join(', '):''}
+          </div>
+          <div style="display:flex;align-items:center;gap:7px;margin-bottom:4px">
+            <div style="flex:1;height:6px;background:var(--border);border-radius:99px;overflow:hidden">
+              <div style="height:6px;border-radius:99px;background:${barColor};width:${barW.toFixed(0)}%;transition:width .7s ease"></div>
+            </div>
+            <span style="font-family:var(--mono);font-size:10px;font-weight:600;color:${barColor};min-width:30px;text-align:right">${usedPct.toFixed(0)}%</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:10px">
+            <span style="color:var(--muted2)">Gasto: <b style="font-family:var(--mono);color:${barColor}">${fmt(spent)}</b></span>
+            <span style="color:${over?'var(--red)':rem>0?'var(--muted)':'var(--green)'};font-weight:600">${over?'⚠️ '+fmt(Math.abs(rem))+' acima':rem>0?'Restam '+fmt(rem):'✅ No limite'}</span>
+          </div>
         </div>
-        <div style="display:flex;justify-content:space-between;font-size:10px">
-          <span style="color:var(--muted2)">${r.isInv?'Disponível':'Gasto'}: <b style="font-family:var(--mono);color:${barColor}">${fmt(r.spent)}</b></span>
-          <span style="color:${statusColor};font-weight:600">${statusTxt}</span>
+        <div style="display:flex;flex-direction:column;gap:4px;margin-left:6px;flex-shrink:0">
+          <button onclick="openBudgetAddSheet(${b.id})" style="background:none;border:none;cursor:pointer;font-size:13px;color:var(--muted);padding:3px 5px;border-radius:6px;line-height:1">✏️</button>
+          <button onclick="delBudgetItem(${b.id})" style="background:none;border:none;cursor:pointer;font-size:13px;color:var(--muted);padding:3px 5px;border-radius:6px;line-height:1">✕</button>
         </div>
-      </div>
-    </div>`;
-  }).join('');
+      </div>`;
+    }).join('')+'</div>';
 }
 
 /* ── PLAN: POR MÊS ── */
@@ -1516,6 +1535,53 @@ function updateSliders(changed){
   const sum=e+i+p;const warn=document.getElementById('slider-sum-warn');
   if(sum===100){warn.textContent='✓ Soma: 100%';warn.style.color='var(--green)';planRule={ess:e,inv:i,pess:p};renderPlanRegra();}
   else{warn.textContent='Soma: '+sum+'% (precisa ser 100%)';warn.style.color='var(--amber)';}
+}
+
+/* ── BUDGET (Orçamento por categoria) ── */
+let budgetItems=JSON.parse(localStorage.getItem('fin_budget')||'[]');
+let editingBudgetId=null;
+
+function saveBudgetData(){localStorage.setItem('fin_budget',JSON.stringify(budgetItems))}
+
+function openBudgetAddSheet(id){
+  editingBudgetId=id||null;
+  const existing=id?budgetItems.find(b=>b.id===id):null;
+  document.getElementById('budget-sheet-title').textContent=existing?'Editar categoria':'Nova categoria';
+  document.getElementById('bf-name').value=existing?existing.name:'';
+  document.getElementById('bf-ico').value=existing?existing.ico:'';
+  document.getElementById('bf-pct').value=existing?existing.pct:10;
+  document.getElementById('bf-pct-range').value=existing?existing.pct:10;
+  // reset cat buttons
+  document.querySelectorAll('.bfcat').forEach(b=>{
+    b.classList.toggle('on',existing&&existing.cats.includes(b.dataset.cat));
+  });
+  document.getElementById('budget-overlay').classList.add('open');
+  document.getElementById('budget-sheet').classList.add('open');
+  setTimeout(()=>document.getElementById('bf-name').focus(),350);
+}
+function closeBudgetAddSheet(){
+  document.getElementById('budget-overlay').classList.remove('open');
+  document.getElementById('budget-sheet').classList.remove('open');
+  editingBudgetId=null;
+}
+function toggleBfCat(el){el.classList.toggle('on')}
+function saveBudgetItem(){
+  const name=document.getElementById('bf-name').value.trim();
+  const ico=document.getElementById('bf-ico').value.trim()||'💰';
+  const pct=Math.min(100,Math.max(0,parseInt(document.getElementById('bf-pct').value)||0));
+  const cats=[...document.querySelectorAll('.bfcat.on')].map(b=>b.dataset.cat);
+  if(!name){showToast('Informe o nome!');return}
+  if(editingBudgetId){
+    const b=budgetItems.find(x=>x.id===editingBudgetId);
+    if(b){b.name=name;b.ico=ico;b.pct=pct;b.cats=cats}
+  }else{
+    budgetItems.push({id:Date.now(),name,ico,pct,cats});
+  }
+  saveBudgetData();closeBudgetAddSheet();renderPlanRegra();showToast('Salvo ✓');
+}
+function delBudgetItem(id){
+  budgetItems=budgetItems.filter(b=>b.id!==id);
+  saveBudgetData();renderPlanRegra();showToast('Removido');
 }
 
 /* ── TEXT IMPORT ── */
@@ -1672,6 +1738,8 @@ document.getElementById('clear-sheet').addEventListener('touchstart',e=>{startY=
 document.getElementById('clear-sheet').addEventListener('touchmove',e=>{if(e.touches[0].clientY-startY>70)closeClear()},{passive:true});
 document.getElementById('text-sheet').addEventListener('touchstart',e=>{startY=e.touches[0].clientY},{passive:true});
 document.getElementById('text-sheet').addEventListener('touchmove',e=>{if(e.touches[0].clientY-startY>70)closeTextSheet()},{passive:true});
+document.getElementById('budget-sheet').addEventListener('touchstart',e=>{startY=e.touches[0].clientY},{passive:true});
+document.getElementById('budget-sheet').addEventListener('touchmove',e=>{if(e.touches[0].clientY-startY>70)closeBudgetAddSheet()},{passive:true});
 
 /* ── VERSION / DEPLOY CHECK ── */
 const DEPLOY_COMMIT='4c304cb';
