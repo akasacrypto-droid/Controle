@@ -1233,26 +1233,61 @@ function _renderPlanTotals(){
 /* ── PLAN: 30/30/40 ── */
 function renderPlanRegra(){
   const res=_renderPlanTotals();if(!res)return;
-  const{tI}=res;
-  const ruleRows=[
-    {label:'Essencial',sub:'Moradia, contas, alimentação',pct:planRule.ess,color:'var(--green)',ico:'🏠'},
-    {label:'Investir / Poupança',sub:'Reserva, investimentos',pct:planRule.inv,color:'var(--blue)',ico:'💎'},
-    {label:'Pessoal / Lazer',sub:'Roupas, saúde, lazer',pct:planRule.pess,color:'var(--purple)',ico:'🎉'},
-  ];
+  const{tI,tE,tB,monthMap,months}=res;
+
+  // Map 30/30/40 categories to actual spending categories
+  const CAT_MAP={
+    ess:['Moradia','Contas','Alimentação','Transporte'],
+    inv:[], // investimento não tem categoria de despesa — é o que sobra
+    pess:['Lazer','Saúde','Roupas','Educação','Outros']
+  };
+
+  // Sum actual expenses per bucket across all months
+  function bucketSpent(cats){
+    return txData.filter(t=>t.type==='expense'&&cats.includes(t.cat||'Outros')).reduce((s,t)=>s+t.val,0);
+  }
+  const spentEss=bucketSpent(CAT_MAP.ess);
+  const spentPess=bucketSpent(CAT_MAP.pess);
+  const spentTotal=tE; // total expenses
+
   const ruleTitle={'303040':'Distribuição 30/30/40','505020':'Distribuição 50/20/30','custom':'Distribuição personalizada'};
   document.getElementById('plan-rule-title').textContent=ruleTitle[activePlanRule]||'Distribuição';
-  document.getElementById('plan-rule-sub').textContent='Baseado na receita total: '+fmt(tI);
+  document.getElementById('plan-rule-sub').textContent=
+    `Receita total: ${fmt(tI)} · Despesas: ${fmt(tE)} · Saldo: ${fmt(tB)}`;
+
+  const ruleRows=[
+    {key:'ess',label:'Essencial',sub:'Moradia, Contas, Alimentação, Transporte',pct:planRule.ess,color:'var(--green)',ico:'🏠',spent:spentEss},
+    {key:'inv',label:'Investir / Poupar',sub:'O que sobra após essencial + pessoal',pct:planRule.inv,color:'var(--blue)',ico:'💎',spent:Math.max(0,tB)},
+    {key:'pess',label:'Pessoal / Lazer',sub:'Lazer, Saúde, Roupas, Educação, Outros',pct:planRule.pess,color:'var(--purple)',ico:'🎉',spent:spentPess},
+  ];
+
   document.getElementById('plan-rule-rows').innerHTML=ruleRows.map(r=>{
     const target=tI*(r.pct/100);
+    const usedPct=target>0?Math.min(100,(r.spent/target)*100):0;
+    const over=r.spent>target;
+    const barColor=over?'var(--red)':usedPct>85?'var(--amber)':r.color;
+    const statusTxt=over
+      ? `⚠️ ${fmt(r.spent - target)} acima do limite`
+      : `Restam ${fmt(target - r.spent)}`;
+    const statusColor=over?'var(--red)':usedPct>85?'var(--amber)':'var(--muted)';
     return`<div class="plan-rule-row">
       <div class="plan-rule-ico" style="background:${r.color}22">${r.ico}</div>
       <div style="flex:1;min-width:0">
-        <div style="display:flex;justify-content:space-between;align-items:baseline">
-          <span style="font-size:13px;font-weight:500">${r.label}</span>
-          <span style="font-family:var(--mono);font-size:13px;color:${r.color}">${fmt(target)}</span>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:2px">
+          <span style="font-size:13px;font-weight:600">${r.label}</span>
+          <span style="font-family:var(--mono);font-size:12px;color:${r.color};font-weight:600">${fmt(target)}</span>
         </div>
-        <div style="font-size:11px;color:var(--muted);margin-top:1px">${r.sub} · ${r.pct}% da receita</div>
-        <div class="plan-rule-bar-bg"><div class="plan-rule-bar-fill" style="width:${r.pct}%;background:${r.color}"></div></div>
+        <div style="font-size:10px;color:var(--muted);margin-bottom:6px">${r.sub} · ${r.pct}% da receita</div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+          <div style="flex:1;height:7px;background:var(--border);border-radius:99px;overflow:hidden">
+            <div style="height:7px;border-radius:99px;background:${barColor};width:${usedPct.toFixed(0)}%;transition:width .6s ease;${over?'box-shadow:0 0 6px rgba(255,92,92,.5)':''}"></div>
+          </div>
+          <span style="font-family:var(--mono);font-size:10px;font-weight:600;color:${barColor};min-width:30px;text-align:right">${usedPct.toFixed(0)}%</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:10px">
+          <span style="color:var(--muted2)">Gasto: <b style="font-family:var(--mono);color:${barColor}">${fmt(r.spent)}</b></span>
+          <span style="color:${statusColor}">${statusTxt}</span>
+        </div>
       </div>
     </div>`;
   }).join('');
