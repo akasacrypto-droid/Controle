@@ -345,17 +345,17 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);dis
       <div style="font-size:12px;color:var(--muted2);margin-bottom:10px">Ajuste os percentuais (soma deve ser 100%)</div>
       <div style="display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:center;margin-bottom:8px">
         <span style="font-size:12px;color:var(--green);width:80px">Essencial</span>
-        <input type="range" id="slider-ess" min="10" max="80" value="30" oninput="updateSliders('ess')" style="accent-color:var(--green)">
+        <input type="range" id="slider-ess" min="0" max="100" value="30" oninput="updateSliders('ess')" style="accent-color:var(--green)">
         <span style="font-size:12px;font-family:var(--mono);color:var(--text);width:35px;text-align:right" id="val-ess">30%</span>
       </div>
       <div style="display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:center;margin-bottom:8px">
         <span style="font-size:12px;color:var(--blue);width:80px">Investir</span>
-        <input type="range" id="slider-inv" min="10" max="80" value="30" oninput="updateSliders('inv')" style="accent-color:var(--blue)">
+        <input type="range" id="slider-inv" min="0" max="100" value="30" oninput="updateSliders('inv')" style="accent-color:var(--blue)">
         <span style="font-size:12px;font-family:var(--mono);color:var(--text);width:35px;text-align:right" id="val-inv">30%</span>
       </div>
       <div style="display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:center">
         <span style="font-size:12px;color:var(--purple);width:80px">Pessoal</span>
-        <input type="range" id="slider-pess" min="10" max="80" value="40" oninput="updateSliders('pess')" style="accent-color:var(--purple)">
+        <input type="range" id="slider-pess" min="0" max="100" value="40" oninput="updateSliders('pess')" style="accent-color:var(--purple)">
         <span style="font-size:12px;font-family:var(--mono);color:var(--text);width:35px;text-align:right" id="val-pess">40%</span>
       </div>
       <div style="margin-top:8px;font-size:11px;text-align:center" id="slider-sum-warn"></div>
@@ -1302,8 +1302,8 @@ function _renderPlanTotals(){
     document.getElementById('plan-months-range').textContent='Nenhum lançamento ainda';return;
   }
   const tI=months.reduce((s,k)=>s+monthMap[k].inc,0),tE=months.reduce((s,k)=>s+monthMap[k].exp,0),tB=tI-tE;
-  document.getElementById('plan-total-inc').textContent=fmtS(tI);document.getElementById('plan-total-exp').textContent=fmtS(tE);
-  document.getElementById('plan-total-bal').textContent=fmtS(tB);document.getElementById('plan-total-bal').style.color=tB>=0?'var(--blue)':'var(--red)';
+  document.getElementById('plan-total-inc').textContent=fmt(tI);document.getElementById('plan-total-exp').textContent=fmt(tE);
+  document.getElementById('plan-total-bal').textContent=fmt(tB);document.getElementById('plan-total-bal').style.color=tB>=0?'var(--blue)':'var(--red)';
   const MN=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
   const pk=k=>{const[y,m]=k.split('-').map(Number);return{y,m}};
   const f=pk(months[0]),l=pk(months[months.length-1]);
@@ -1322,10 +1322,10 @@ function renderPlanRegra(){
   const curExp=curTxs.filter(t=>t.type==='expense').reduce((s,t)=>s+t.val,0);
   const curBal=curInc-curExp;
 
-  // base = receita do mês atual (ou média mensal se mês sem receita)
+  // base = SALDO do mês atual (receita - despesas) = o que realmente tem disponível
   const monthCount=Object.keys(res.monthMap).length||1;
-  const avgInc=tI/monthCount;
-  const baseInc=curInc>0?curInc:avgInc;
+  const avgBal=(tI-tE)/monthCount;
+  const baseSaldo=curBal>0?curBal:(avgBal>0?avgBal:curInc>0?curInc:tI/monthCount);
 
   // Gastos do mês atual por bucket
   const CAT_ESS=['Moradia','Contas','Alimentação','Transporte'];
@@ -1343,7 +1343,7 @@ function renderPlanRegra(){
   document.getElementById('plan-rule-title').textContent=ruleTitle[activePlanRule]||'Distribuição';
   const MN=MONTHS[curM]+' '+curY;
   document.getElementById('plan-rule-sub').textContent=
-    `Receita ${MN}: ${fmt(curInc)} · Despesas: ${fmt(curExp)} · Saldo: ${fmt(curBal)}`;
+    `Base: Saldo de ${MN} — ${fmt(baseSaldo)} · Receita: ${fmt(curInc)} · Despesas: ${fmt(curExp)}`;
 
   const ruleRows=[
     {
@@ -1371,7 +1371,7 @@ function renderPlanRegra(){
   ];
 
   document.getElementById('plan-rule-rows').innerHTML=ruleRows.map(r=>{
-    const target=baseInc*(r.pct/100);
+    const target=baseSaldo*(r.pct/100);
     const usedPct=target>0?Math.min(130,(r.spent/target)*100):0; // allow >100 to show red
     const over=!r.isInv&&r.spent>target;
     const under=r.isInv&&r.spent<target; // investindo menos do que deveria
@@ -1393,7 +1393,7 @@ function renderPlanRegra(){
           <span style="font-size:13px;font-weight:600">${r.label}</span>
           <span style="font-family:var(--mono);font-size:12px;color:${r.color};font-weight:600">Meta: ${fmt(target)}</span>
         </div>
-        <div style="font-size:10px;color:var(--muted);margin-bottom:7px">${r.sub} · ${r.pct}% de ${fmt(baseInc)}</div>
+        <div style="font-size:10px;color:var(--muted);margin-bottom:7px">${r.sub} · ${r.pct}% de ${fmt(baseSaldo)}</div>
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px">
           <div style="flex:1;height:7px;background:var(--border);border-radius:99px;overflow:hidden">
             <div style="height:7px;border-radius:99px;background:${barColor};width:${barFill.toFixed(0)}%;transition:width .7s ease;${over?'box-shadow:0 0 8px rgba(255,92,92,.5)':''}"></div>
