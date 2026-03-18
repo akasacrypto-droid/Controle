@@ -212,6 +212,11 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);dis
 .budget-row{display:flex;align-items:center;gap:10px;padding:13px 14px;border-bottom:1px solid var(--border);background:var(--s1)}
 .budget-row:last-child{border-bottom:none}
 .budget-row:first-child{border-radius:14px 14px 0 0}
+/* REPORT PERIOD TABS */
+
+/* REPORT */
+.rep-period-btn{padding:6px 13px;border-radius:99px;border:1px solid var(--border2);background:none;color:var(--muted);font-size:11px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;white-space:nowrap;transition:all .15s;flex-shrink:0}
+.rep-period-btn.on{background:var(--purple);border-color:var(--purple);color:#fff}
 /* PLAN SUB TABS */
 .plan-sub-tab{padding:8px 14px;border-radius:10px;border:1px solid var(--border2);background:none;color:var(--muted);font-size:12px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;white-space:nowrap;transition:all .18s;flex-shrink:0}
 .plan-sub-tab.on{background:var(--green-bg);border-color:rgba(0,200,150,.35);color:var(--green)}
@@ -249,9 +254,10 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);dis
 <!-- NAV TABS -->
 <div class="nav-tabs">
   <button class="nav-tab on" onclick="goTab('home')" id="tab-home"><span class="tab-ico">🏠</span>Início</button>
-  <button class="nav-tab" onclick="goTab('txs')" id="tab-txs"><span class="tab-ico">📋</span>Lançamentos</button>
+  <button class="nav-tab" onclick="goTab('txs')" id="tab-txs"><span class="tab-ico">📋</span>Extratos</button>
   <button class="nav-tab" onclick="goTab('plan')" id="tab-plan"><span class="tab-ico">🎯</span>Planejar</button>
-  <button class="nav-tab" onclick="goTab('notif')" id="tab-notif"><span class="tab-ico">🔔</span>Alertas</button>
+  <button class="nav-tab" onclick="goTab('report')" id="tab-report"><span class="tab-ico">📈</span>Relatório</button>
+  <button class="nav-tab" onclick="goTab('cfg')" id="tab-cfg"><span class="tab-ico">⚙️</span>Config</button>
 </div>
 
 <!-- ── PAGE: HOME ── -->
@@ -297,6 +303,59 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);dis
     <div class="tx-list" id="tx-list"></div>
     <div class="empty" id="tx-empty"><div class="empty-ico">📭</div>Nenhum lançamento neste mês.</div>
   </div>
+</div>
+
+<!-- ── PAGE: RELATÓRIO ── -->
+<div class="page" id="page-report">
+
+  <!-- HEADER HERO -->
+  <div style="background:linear-gradient(135deg,#1a1030,#120820);border:1px solid rgba(192,132,252,.18);border-radius:20px;padding:18px;margin-bottom:12px;position:relative;overflow:hidden">
+    <div style="position:absolute;top:-40px;right:-30px;width:120px;height:120px;border-radius:50%;background:radial-gradient(circle,rgba(192,132,252,.1),transparent 65%)"></div>
+    <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;margin-bottom:4px">Relatório de gastos</div>
+    <div id="rep-title" style="font-size:16px;font-weight:600;color:var(--text);margin-bottom:12px">—</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;text-align:center">
+      <div><div style="font-family:var(--mono);font-size:15px;font-weight:600;color:var(--red)" id="rep-total-exp">R$0</div><div style="font-size:10px;color:var(--muted);margin-top:2px;text-transform:uppercase;letter-spacing:.4px">Gasto total</div></div>
+      <div><div style="font-family:var(--mono);font-size:15px;font-weight:600;color:var(--green)" id="rep-total-inc">R$0</div><div style="font-size:10px;color:var(--muted);margin-top:2px;text-transform:uppercase;letter-spacing:.4px">Receita</div></div>
+      <div><div style="font-family:var(--mono);font-size:15px;font-weight:600" id="rep-total-bal">R$0</div><div style="font-size:10px;color:var(--muted);margin-top:2px;text-transform:uppercase;letter-spacing:.4px">Saldo</div></div>
+    </div>
+  </div>
+
+  <!-- FILTRO PERÍODO -->
+  <div style="display:flex;gap:6px;margin-bottom:12px;overflow-x:auto;padding-bottom:2px">
+    <button class="rep-period-btn on" id="rpb-month" onclick="setRepPeriod('month')">Este mês</button>
+    <button class="rep-period-btn" id="rpb-3m" onclick="setRepPeriod('3m')">3 meses</button>
+    <button class="rep-period-btn" id="rpb-6m" onclick="setRepPeriod('6m')">6 meses</button>
+    <button class="rep-period-btn" id="rpb-year" onclick="setRepPeriod('year')">12 meses</button>
+    <button class="rep-period-btn" id="rpb-all" onclick="setRepPeriod('all')">Tudo</button>
+  </div>
+
+  <!-- RANKING CATEGORIAS -->
+  <div class="slbl">🏆 Ranking de gastos</div>
+  <div style="background:var(--s1);border:1px solid var(--border);border-radius:16px;overflow:hidden;margin-bottom:12px">
+    <div id="rep-ranking"></div>
+  </div>
+
+  <!-- MAIORES LANÇAMENTOS -->
+  <div class="slbl">💸 Maiores gastos individuais</div>
+  <div style="background:var(--s1);border:1px solid var(--border);border-radius:16px;overflow:hidden;margin-bottom:12px">
+    <div id="rep-top-tx"></div>
+  </div>
+
+  <!-- GRÁFICO PIZZA -->
+  <div class="card" style="margin-bottom:12px">
+    <div class="card-head"><span class="card-title">Distribuição por categoria</span></div>
+    <div class="chart-box">
+      <div class="chart-wrap"><canvas id="repPieChart"></canvas></div>
+      <div id="rep-pie-legend" style="display:flex;flex-wrap:wrap;gap:7px;margin-top:10px"></div>
+    </div>
+  </div>
+
+  <!-- TENDÊNCIA MÊS A MÊS -->
+  <div class="slbl">📅 Tendência mês a mês</div>
+  <div style="background:var(--s1);border:1px solid var(--border);border-radius:16px;overflow:hidden;margin-bottom:12px">
+    <div id="rep-trend"></div>
+  </div>
+
 </div>
 
 <!-- ── PAGE: PLANEJAR ── -->
@@ -401,9 +460,10 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);dis
 
 </div>
 
-<!-- ── PAGE: ALERTAS ── -->
-<div class="page" id="page-notif">
-  <div class="slbl">Lembrete diário</div>
+<!-- ── PAGE: CONFIG ── -->
+<div class="page" id="page-cfg">
+
+  <div class="slbl">Notificações</div>
   <div class="card" style="margin-bottom:12px">
     <div class="notif-row">
       <div class="notif-info">
@@ -438,30 +498,39 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);dis
     </div>
   </div>
 
-  <div class="slbl">Como funciona</div>
+  <div class="slbl">Importar extrato Nubank</div>
   <div class="card" style="margin-bottom:12px">
-    <div style="padding:16px;font-size:13px;color:var(--muted2);line-height:1.7">
-      <p style="margin-bottom:6px">1️⃣ Ative o toggle acima e escolha o horário</p>
-      <p style="margin-bottom:6px">2️⃣ Permita notificações quando o navegador perguntar</p>
-      <p style="margin-bottom:6px">3️⃣ Adicione o app na tela inicial para melhor experiência</p>
-      <p style="color:var(--muted);font-size:12px;margin-top:8px">⚠️ O app precisa estar aberto em segundo plano para enviar notificações.</p>
+    <div style="padding:12px 16px;border-bottom:1px solid var(--border);font-size:12px;color:var(--muted2);line-height:1.7">
+      <b style="color:var(--text)">Como exportar do Nubank:</b><br>
+      Nubank → Perfil → Exportar dados → Selecionar período → Baixar CSV<br>
+      <span style="color:var(--muted);font-size:11px">✅ Seguro — nenhum dado sai do seu celular</span>
+    </div>
+    <div class="notif-row" style="border-bottom:none">
+      <div class="notif-info">
+        <div class="ntitle">Importar CSV do Nubank</div>
+        <div class="nsub" id="nubank-sub">Categorizado automaticamente</div>
+      </div>
+      <label style="background:var(--purple);border:none;color:#fff;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:5px">
+        💜 Importar CSV
+        <input type="file" id="nubank-csv-input" accept=".csv" onchange="importNubankCSV(event)" style="display:none"/>
+      </label>
     </div>
   </div>
 
-  <div class="slbl">Backup dos dados</div>
+  <div class="slbl">Backup</div>
   <div class="card" style="margin-bottom:12px">
     <div class="notif-row" style="border-bottom:none;padding-bottom:6px">
       <div class="notif-info">
         <div class="ntitle">Exportar dados</div>
-        <div class="nsub" id="export-sub">Salva todos os lançamentos em um arquivo</div>
+        <div class="nsub" id="export-sub">Salva todos os lançamentos em arquivo</div>
       </div>
       <button onclick="exportData()" style="background:var(--green-bg);border:1px solid rgba(0,200,150,.25);color:var(--green);border-radius:8px;padding:8px 14px;font-size:12px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:5px">⬇️ Exportar</button>
     </div>
     <div style="height:1px;background:var(--border);margin:0 16px"></div>
     <div class="notif-row" style="border-bottom:none;padding-top:6px">
       <div class="notif-info">
-        <div class="ntitle">Importar dados</div>
-        <div class="nsub">Carrega lançamentos de um arquivo exportado</div>
+        <div class="ntitle">Importar backup</div>
+        <div class="nsub">Restaura de arquivo exportado</div>
       </div>
       <label style="background:var(--blue-bg);border:1px solid rgba(91,158,255,.25);color:var(--blue);border-radius:8px;padding:8px 14px;font-size:12px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:5px">
         ⬆️ Importar
@@ -688,6 +757,8 @@ function goTab(tab){
   document.getElementById('tab-'+tab).classList.add('on');
   document.getElementById('fab').style.display=(tab==='txs'||tab==='home')?'flex':'none';
   if(tab==='plan')renderPlan();
+  if(tab==='report')renderReport();
+  if(tab==='report')renderReport();
 }
 
 let activePlanSubTab='geral';
@@ -1028,6 +1099,7 @@ function render(){
   renderCatChips(all);
   renderTxList(all);
   if(activeTab==='plan')renderPlan();
+  if(activeTab==='report')renderReport();
 }
 
 function renderHomeCharts(inc,exp,all){
@@ -1559,6 +1631,267 @@ function delBudgetItem(id){
   saveBudgetData();renderPlanRegra();showToast('Removido');
 }
 
+/* ── RELATÓRIO ── */
+let repPeriod='month';
+let repPieInst=null,repBarInst=null;
+
+function setRepPeriod(p){
+  repPeriod=p;
+  document.querySelectorAll('.rep-period-btn').forEach(b=>b.classList.remove('on'));
+  document.getElementById('rpb-'+p).classList.add('on');
+  renderReport();
+}
+
+function getRepTxs(){
+  const now=new Date();
+  const y=curY,m=curM;
+  switch(repPeriod){
+    case 'month': return txData.filter(t=>t.month===curKey());
+    case '3m':{
+      const keys=[];for(let i=0;i<3;i++){let mm=m-i,yy=y;if(mm<0){mm+=12;yy--}keys.push(`${yy}-${mm}`)}
+      return txData.filter(t=>keys.includes(t.month));
+    }
+    case '6m':{
+      const keys=[];for(let i=0;i<6;i++){let mm=m-i,yy=y;if(mm<0){mm+=12;yy--}keys.push(`${yy}-${mm}`)}
+      return txData.filter(t=>keys.includes(t.month));
+    }
+    case 'year':{
+      const keys=[];for(let i=0;i<12;i++){let mm=m-i,yy=y;if(mm<0){mm+=12;yy--}keys.push(`${yy}-${mm}`)}
+      return txData.filter(t=>keys.includes(t.month));
+    }
+    case 'all': return txData;
+    default: return txData.filter(t=>t.month===curKey());
+  }
+}
+
+function getRepLabel(){
+  const mn=MONTHS[curM];
+  switch(repPeriod){
+    case 'month': return mn+' '+curY;
+    case '3m': return 'Últimos 3 meses';
+    case '6m': return 'Últimos 6 meses';
+    case 'year': return 'Últimos 12 meses';
+    case 'all': return 'Todo o período';
+  }
+}
+
+function renderReport(){
+  if(repPieInst)repPieInst.destroy();
+  if(repBarInst)repBarInst.destroy();
+
+  const txs=getRepTxs();
+  const expenses=txs.filter(t=>t.type==='expense');
+  const inc=txs.filter(t=>t.type==='income').reduce((s,t)=>s+t.val,0);
+  const exp=expenses.reduce((s,t)=>s+t.val,0);
+  const bal=inc-exp;
+
+  // Header
+  document.getElementById('rep-title').textContent=getRepLabel();
+  document.getElementById('rep-total-exp').textContent=fmt(exp);
+  document.getElementById('rep-total-inc').textContent=fmt(inc);
+  const balEl=document.getElementById('rep-total-bal');
+  balEl.textContent=fmt(bal);balEl.style.color=bal>=0?'var(--blue)':'var(--red)';
+
+  // ── RANKING por categoria ──
+  const cats={};
+  expenses.forEach(t=>{const k=t.cat||'Outros';cats[k]=(cats[k]||0)+t.val});
+  const sorted=Object.entries(cats).sort((a,b)=>b[1]-a[1]);
+  const maxVal=sorted[0]?sorted[0][1]:1;
+
+  const ranking=document.getElementById('rep-ranking');
+  if(!sorted.length){
+    ranking.innerHTML='<div style="padding:18px;text-align:center;color:var(--muted);font-size:13px">Sem despesas no período</div>';
+  }else{
+    ranking.innerHTML=sorted.map(([cat,val],i)=>{
+      const pct=exp>0?((val/exp)*100).toFixed(1):0;
+      const barW=((val/maxVal)*100).toFixed(0);
+      const color=PALETTE[i%PALETTE.length];
+      const ico=CAT_ICONS[cat]||'💸';
+      return`<div style="display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid var(--border)${i===sorted.length-1?';border-bottom:none':''}">
+        <div style="width:28px;text-align:center;font-size:13px;font-weight:700;color:var(--muted);font-family:var(--mono);flex-shrink:0">#${i+1}</div>
+        <div style="width:30px;height:30px;border-radius:9px;background:${color}22;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0">${ico}</div>
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:5px">
+            <span style="font-size:13px;font-weight:600">${cat}</span>
+            <span style="font-family:var(--mono);font-size:13px;font-weight:700;color:${color}">${fmt(val)}</span>
+          </div>
+          <div style="height:5px;background:var(--border);border-radius:99px;overflow:hidden">
+            <div style="height:5px;border-radius:99px;background:${color};width:${barW}%;transition:width .7s ease"></div>
+          </div>
+          <div style="font-size:10px;color:var(--muted);margin-top:3px">${pct}% do total gasto</div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  // ── TOP 5 LANÇAMENTOS INDIVIDUAIS ──
+  const topTx=[...expenses].sort((a,b)=>b.val-a.val).slice(0,8);
+  const topEl=document.getElementById('rep-top-tx');
+  if(!topTx.length){
+    topEl.innerHTML='<div style="padding:18px;text-align:center;color:var(--muted);font-size:13px">Sem lançamentos no período</div>';
+  }else{
+    topEl.innerHTML=topTx.map((t,i)=>{
+      const color=PALETTE[i%PALETTE.length];
+      const ico=CAT_ICONS[t.cat||'Outros']||'💸';
+      const MN=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+      const[ty,tm]=t.month.split('-').map(Number);
+      return`<div style="display:flex;align-items:center;gap:10px;padding:11px 14px;border-bottom:1px solid var(--border)${i===topTx.length-1?';border-bottom:none':''}">
+        <div style="width:32px;height:32px;border-radius:9px;background:${color}22;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0">${ico}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${t.desc}</div>
+          <div style="font-size:10px;color:var(--muted);margin-top:2px">${t.cat||'Outros'} · ${MN[tm]} ${ty}</div>
+        </div>
+        <div style="font-family:var(--mono);font-size:13px;font-weight:700;color:var(--red);flex-shrink:0">− ${fmt(t.val).replace('R$ ','R$')}</div>
+      </div>`;
+    }).join('');
+  }
+
+  // ── GRÁFICO PIZZA ──
+  const lbls=sorted.map(([k])=>k),vals=sorted.map(([,v])=>v),cols=PALETTE.slice(0,lbls.length);
+  if(lbls.length){
+    repPieInst=new Chart(document.getElementById('repPieChart'),{
+      type:'doughnut',
+      data:{labels:lbls,datasets:[{data:vals,backgroundColor:cols,borderWidth:0,hoverOffset:5}]},
+      options:{responsive:true,maintainAspectRatio:false,cutout:'60%',plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`${c.label}: ${fmt(c.raw)} (${exp>0?((c.raw/exp)*100).toFixed(1):0}%)`}}}}
+    });
+    const total=vals.reduce((s,v)=>s+v,0);
+    document.getElementById('rep-pie-legend').innerHTML=lbls.map((l,i)=>`
+      <div style="display:flex;align-items:center;gap:5px;font-size:10.5px;color:var(--muted2)">
+        <div style="width:8px;height:8px;border-radius:2px;background:${cols[i]};flex-shrink:0"></div>
+        ${CAT_ICONS[l]||'💸'} ${l} <span style="color:var(--muted)">${total>0?((vals[i]/total)*100).toFixed(0):0}%</span>
+      </div>`).join('');
+  }else{
+    document.getElementById('rep-pie-legend').innerHTML='';
+  }
+
+  // ── TENDÊNCIA MÊS A MÊS ──
+  const monthMap={};
+  txs.forEach(t=>{if(!monthMap[t.month])monthMap[t.month]={inc:0,exp:0};if(t.type==='income')monthMap[t.month].inc+=t.val;else monthMap[t.month].exp+=t.val});
+  const mKeys=Object.keys(monthMap).sort();
+  const MNS=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+  const MN2=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  const trend=document.getElementById('rep-trend');
+  if(!mKeys.length){
+    trend.innerHTML='<div style="padding:18px;text-align:center;color:var(--muted);font-size:13px">—</div>';
+  }else{
+    const maxE=Math.max(...mKeys.map(k=>monthMap[k].exp),1);
+    trend.innerHTML=mKeys.slice().reverse().map(k=>{
+      const d=monthMap[k];const[y,m]=k.split('-').map(Number);
+      const bal=d.inc-d.exp;const barW=((d.exp/maxE)*100).toFixed(0);
+      const isCurrentMonth=k===curKey();
+      return`<div style="display:flex;align-items:center;gap:10px;padding:11px 14px;border-bottom:1px solid var(--border);${isCurrentMonth?'background:rgba(192,132,252,.05)':''}">
+        <div style="width:50px;font-size:11px;font-weight:600;color:${isCurrentMonth?'var(--purple)':'var(--muted2)'};flex-shrink:0">${MNS[m]} ${y}</div>
+        <div style="flex:1">
+          <div style="display:flex;justify-content:space-between;font-size:10.5px;margin-bottom:4px">
+            <span style="color:var(--green)">↑ ${fmtS(d.inc)}</span>
+            <span style="color:var(--red)">↓ ${fmtS(d.exp)}</span>
+          </div>
+          <div style="height:4px;background:var(--border);border-radius:99px;overflow:hidden">
+            <div style="height:4px;border-radius:99px;background:${bal>=0?'var(--green)':'var(--red)'};width:${barW}%"></div>
+          </div>
+        </div>
+        <div style="font-family:var(--mono);font-size:11px;font-weight:700;min-width:58px;text-align:right;color:${bal>=0?'var(--green)':'var(--red)'}">${bal>=0?'+':''}${fmtS(bal)}</div>
+      </div>`;
+    }).join('');
+  }
+}
+
+/* ── NUBANK CSV IMPORT ── */
+function importNubankCSV(event){
+  const file=event.target.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{
+      const text=e.target.result;
+      const lines=text.split('\n').map(l=>l.trim()).filter(l=>l);
+      if(!lines.length){showToast('❌ Arquivo vazio');return}
+
+      // Validate header: Data,Valor,Identificador,Descrição
+      const header=lines[0].toLowerCase();
+      if(!header.includes('data')&&!header.includes('valor')){
+        showToast('❌ Formato não reconhecido');event.target.value='';return;
+      }
+
+      // Parse columns from header
+      const cols=lines[0].split(',').map(c=>c.trim().toLowerCase().replace(/['"]/g,''));
+      const iDate=cols.findIndex(c=>c.includes('data'));
+      const iVal=cols.findIndex(c=>c.includes('valor'));
+      const iDesc=cols.findIndex(c=>c.includes('descri')||c.includes('title')||c.includes('título'));
+
+      if(iDate<0||iVal<0){showToast('❌ Colunas não encontradas');return}
+
+      let imported=0,skipped=0;
+
+      lines.slice(1).forEach(line=>{
+        if(!line.trim())return;
+        // Split respecting quotes
+        const raw=line.split(',');
+        if(raw.length<3)return;
+
+        const dateRaw=(raw[iDate]||'').replace(/['"]/g,'').trim();
+        const valRaw=(raw[iVal]||'').replace(/['"]/g,'').trim();
+        // Description may contain commas — join remaining cols
+        const descRaw=iDesc>=0?(raw[iDesc]||'').replace(/['"]/g,'').trim():raw.slice(iDesc>=0?iDesc:3).join(' ').replace(/['"]/g,'').trim();
+
+        // Parse date DD/MM/YYYY
+        const dm=dateRaw.match(/(\d{2})\/(\d{2})\/(\d{4})/);
+        if(!dm)return;
+        const month=`${dm[3]}-${parseInt(dm[2])-1}`; // year-monthIndex
+
+        // Parse value — negative = expense, positive = income
+        const amount=parseFloat(valRaw.replace(',','.'));
+        if(isNaN(amount)||amount===0)return;
+
+        const type=amount<0?'expense':'income';
+        const val=Math.abs(amount);
+
+        // Clean description — shorten long Pix descriptions
+        let desc=descRaw;
+        if(desc.includes('Transferência enviada pelo Pix -')){
+          // Extract name: "Transferência enviada pelo Pix - NOME - ..."
+          const m=desc.match(/Pix\s*-\s*([^-]+)/i);
+          desc=m?'Pix → '+m[1].trim().split(' ').slice(0,2).join(' '):'Pix enviado';
+        }else if(desc.includes('Transferência recebida pelo Pix -')){
+          const m=desc.match(/Pix\s*-\s*([^-]+)/i);
+          desc=m?'Pix ← '+m[1].trim().split(' ').slice(0,2).join(' '):'Pix recebido';
+        }else if(desc.includes('Pagamento de boleto')){
+          const m=desc.match(/boleto efetuado\s*-\s*(.+)/i);
+          desc=m?'Boleto: '+m[1].trim().slice(0,30):'Pagamento de boleto';
+        }else if(desc.includes('Compra no débito -')){
+          desc=desc.replace('Compra no débito - ','').slice(0,40);
+        }
+        desc=desc.trim().slice(0,50);
+
+        // Skip duplicates
+        const isDup=txData.some(t=>t.month===month&&t.desc===desc&&Math.abs(t.val-val)<0.01&&t.type===type);
+        if(isDup){skipped++;return}
+
+        const cat=guessCategory(desc,type);
+        txData.push({id:Date.now()+Math.random(),month,desc,val,type,cat});
+        imported++;
+      });
+
+      if(!imported&&!skipped){showToast('❌ Nenhum lançamento encontrado');event.target.value='';return}
+      save();
+
+      // Navigate to most recent imported month
+      if(imported>0){
+        const importedTxs=txData.slice(-imported);
+        const months=[...new Set(importedTxs.map(t=>t.month))].sort().reverse();
+        if(months[0]){const[y,m]=months[0].split('-').map(Number);curY=y;curM=m}
+      }
+      render();
+      document.getElementById('nubank-sub').textContent=`${imported} importados · ${skipped} duplicatas ignoradas`;
+      showToast(`✅ ${imported} lançamentos importados!`);
+    }catch(err){
+      console.error(err);
+      showToast('❌ Erro ao ler CSV');
+    }
+    event.target.value='';
+  };
+  reader.readAsText(file,'UTF-8');
+}
+
 /* ── TEXT IMPORT ── */
 function openTextSheet(){
   document.getElementById('text-input').value='';
@@ -1626,14 +1959,15 @@ function parseTextInput(raw){
 function guessCategory(desc,type){
   if(type==='income')return'Salário';
   const d=desc.toLowerCase();
-  if(/aluguel|condomínio|iptu|agua|água|luz|energia|gás|gas|internet|tv|seguro/.test(d))return'Moradia';
-  if(/mercado|supermercado|ifood|rappi|restaurante|lanche|pizza|padaria/.test(d))return'Alimentação';
-  if(/uber|99emp|ônibus|metro|gasolina|combustível|estacionamento/.test(d))return'Transporte';
-  if(/farmácia|remédio|médico|dentista|plano|saúde|consulta/.test(d))return'Saúde';
-  if(/netflix|spotify|cinema|jogo|game|steam|show/.test(d))return'Lazer';
-  if(/escola|faculdade|curso|livro/.test(d))return'Educação';
-  if(/roupa|calçado|sapato|tênis/.test(d))return'Roupas';
-  if(/tim|claro|vivo|oi|celular|telefone/.test(d))return'Contas';
+  if(/aluguel|condomínio|iptu|agua|água|luz|energia|gás|gas|internet|tv|seguro|vero|claro|vivo|tim|oi|celular|telefone|boleto/.test(d))return d.includes('internet')||d.includes('vero')||d.includes('claro')||d.includes('vivo')||d.includes('tim')||d.includes('oi')||d.includes('celular')?'Contas':'Moradia';
+  if(/mercado|supermercado|ifood|ifd|rappi|restaurante|lanche|pizza|padaria|café|comida|burger|mcdonalds|subway|giraffas|habib/.test(d))return'Alimentação';
+  if(/uber|99|ônibus|metro|gasolina|combustível|estacionamento|brt|shell|posto|petrobras/.test(d))return'Transporte';
+  if(/farmácia|remédio|médico|dentista|plano|saúde|consulta|exame|drogaria|ultrafarma/.test(d))return'Saúde';
+  if(/netflix|spotify|cinema|jogo|game|steam|show|teatro|bar|prime|disney|hbo|twitch/.test(d))return'Lazer';
+  if(/escola|faculdade|curso|livro|matrícula|udemy|alura/.test(d))return'Educação';
+  if(/roupa|calçado|sapato|tênis|vestuário|zara|renner|c&a|riachuelo|marisa/.test(d))return'Roupas';
+  if(/pix\s*→|transferência enviada|boleto/.test(d))return'Outros';
+  if(/resgate rdb|investimento|poupança/.test(d))return'Salário'; // treat as income-like
   return'Outros';
 }
 
