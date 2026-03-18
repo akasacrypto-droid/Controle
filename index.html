@@ -309,46 +309,10 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
 
 <!-- NAV TABS -->
 <div class="nav-tabs">
-  <button class="nav-tab on" onclick="goTab('home')" id="tab-home"><span class="tab-ico">🏠</span>Início</button>
+  <button class="nav-tab on" onclick="goTab('report')" id="tab-report"><span class="tab-ico">📈</span>Relatório</button>
   <button class="nav-tab" onclick="goTab('txs')" id="tab-txs"><span class="tab-ico">📋</span>Extratos</button>
   <button class="nav-tab" onclick="goTab('plan')" id="tab-plan"><span class="tab-ico">🎯</span>Planejar</button>
-  <button class="nav-tab" onclick="goTab('report')" id="tab-report"><span class="tab-ico">📈</span>Relatório</button>
   <button class="nav-tab" onclick="goTab('cfg')" id="tab-cfg"><span class="tab-ico">⚙️</span>Config</button>
-</div>
-
-<!-- ── PAGE: HOME ── -->
-<div class="page on" id="page-home">
-  <div class="balance-hero">
-    <div class="bal-label">Saldo do mês</div>
-    <div class="bal-val pos" id="hero-bal">R$ 0,00</div>
-    <div class="bal-row">
-      <div class="bal-item"><div class="bal-dot" style="background:var(--green)"></div><span id="hero-inc">R$ 0,00 receitas</span></div>
-      <div class="bal-item"><div class="bal-dot" style="background:var(--red)"></div><span id="hero-exp">R$ 0,00 despesas</span></div>
-    </div>
-  </div>
-
-  <div class="comp-banner neutral" id="comp-banner">
-    <span class="comp-ico">📅</span>
-    <span class="comp-txt" id="comp-txt">Adicione lançamentos para ver o comparativo.</span>
-  </div>
-
-  <div class="metrics">
-    <div class="mc inc"><div class="mc-label">Receitas</div><div class="mc-val g" id="m-inc">R$ 0,00</div><div class="mc-sub" id="m-inc-ct">0 lançamentos</div></div>
-    <div class="mc exp"><div class="mc-label">Despesas</div><div class="mc-val r" id="m-exp">R$ 0,00</div><div class="mc-sub" id="m-exp-ct">0 lançamentos</div></div>
-  </div>
-
-  <div class="slbl">Gráficos do mês</div>
-  <div class="card">
-    <div class="card-head"><span class="card-title">Receitas vs Despesas</span></div>
-    <div class="chart-box"><div class="chart-wrap"><canvas id="barChart"></canvas></div></div>
-  </div>
-  <div class="card">
-    <div class="card-head"><span class="card-title">Despesas por categoria</span></div>
-    <div class="chart-box">
-      <div class="chart-wrap"><canvas id="pieChart"></canvas></div>
-      <div class="chart-legend" id="pie-legend"></div>
-    </div>
-  </div>
 </div>
 
 <!-- ── PAGE: LANÇAMENTOS ── -->
@@ -362,7 +326,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
 </div>
 
 <!-- ── PAGE: RELATÓRIO ── -->
-<div class="page" id="page-report">
+<div class="page on" id="page-report">
 
   <!-- HEADER HERO -->
   <div style="background:linear-gradient(135deg,#1a1030,#120820);border:1px solid rgba(192,132,252,.18);border-radius:20px;padding:18px;margin-bottom:12px;position:relative;overflow:hidden">
@@ -681,18 +645,9 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
   <div class="field"><label>Valor (R$)</label><input type="number" id="f-val" placeholder="0,00" step="0.01" min="0" inputmode="decimal"/></div>
   <div class="field">
     <label>Categoria</label>
-    <select id="f-cat">
-      <option value="Moradia">🏠 Moradia</option>
-      <option value="Alimentação">🛒 Alimentação</option>
-      <option value="Transporte">🚗 Transporte</option>
-      <option value="Saúde">💊 Saúde</option>
-      <option value="Lazer">🎬 Lazer</option>
-      <option value="Educação">📚 Educação</option>
-      <option value="Roupas">👗 Roupas</option>
-      <option value="Contas">📱 Contas</option>
-      <option value="Salário">💵 Salário</option>
-      <option value="Outros">💸 Outros</option>
-    </select>
+    <div id="f-cat-chips" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px"></div>
+    <input type="text" id="f-cat-custom" placeholder="Ou escreva uma nova categoria…" autocomplete="off" oninput="onCatCustomInput('f')" style="font-size:14px"/>
+    <input type="hidden" id="f-cat" value="Outros"/>
   </div>
   <button class="sheet-save" onclick="addTx()">Salvar</button>
   <button onclick="closeSheet();openTextSheet()" style="width:100%;padding:12px;background:var(--blue-bg);border:1px solid rgba(91,158,255,.25);border-radius:14px;color:var(--blue);font-size:14px;font-weight:500;font-family:'DM Sans',sans-serif;cursor:pointer;margin-top:6px">📝 Lançar vários por texto</button>
@@ -712,18 +667,9 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
   <div class="field"><label>Valor (R$)</label><input type="number" id="e-val" step="0.01" min="0" inputmode="decimal"/></div>
   <div class="field">
     <label>Categoria</label>
-    <select id="e-cat">
-      <option value="Moradia">🏠 Moradia</option>
-      <option value="Alimentação">🛒 Alimentação</option>
-      <option value="Transporte">🚗 Transporte</option>
-      <option value="Saúde">💊 Saúde</option>
-      <option value="Lazer">🎬 Lazer</option>
-      <option value="Educação">📚 Educação</option>
-      <option value="Roupas">👗 Roupas</option>
-      <option value="Contas">📱 Contas</option>
-      <option value="Salário">💵 Salário</option>
-      <option value="Outros">💸 Outros</option>
-    </select>
+    <div id="e-cat-chips" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px"></div>
+    <input type="text" id="e-cat-custom" placeholder="Ou escreva uma nova categoria…" autocomplete="off" oninput="onCatCustomInput('e')" style="font-size:14px"/>
+    <input type="hidden" id="e-cat" value="Outros"/>
   </div>
   <button class="modal-save" onclick="saveEdit()">Salvar alterações</button>
   <button class="sheet-cancel" onclick="closeModal()">Cancelar</button>
@@ -735,6 +681,51 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
 const MONTHS=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 const PALETTE=['#00C896','#5B9EFF','#FFB84D','#FF8C69','#C084FC','#60D9F5','#FF7EAA','#7DD3B0'];
 const CAT_ICONS={'Moradia':'🏠','Alimentação':'🛒','Transporte':'🚗','Saúde':'💊','Lazer':'🎬','Educação':'📚','Roupas':'👗','Contas':'📱','Salário':'💵','Outros':'💸'};
+const BASE_CATS=['Moradia','Alimentação','Transporte','Saúde','Lazer','Educação','Roupas','Contas','Salário','Outros'];
+
+function getAllCats(){
+  const custom=new Set(txData.map(t=>t.cat||'Outros'));
+  BASE_CATS.forEach(c=>custom.add(c));
+  return [...custom];
+}
+function getCatIco(c){return CAT_ICONS[c]||'🏷️'}
+
+function renderCatChipPicker(prefix, selected){
+  const chips=document.getElementById(prefix+'-cat-chips');
+  const customInput=document.getElementById(prefix+'-cat-custom');
+  const hidden=document.getElementById(prefix+'-cat');
+  if(!chips)return;
+  const cats=getAllCats();
+  chips.innerHTML=cats.map(c=>`
+    <button type="button" onclick="selectCatChip('${prefix}','${c}')"
+      style="padding:5px 10px;border-radius:99px;border:1px solid ${c===selected?'rgba(0,200,150,.4)':'var(--border2)'};
+      background:${c===selected?'var(--green-bg)':'none'};
+      color:${c===selected?'var(--green)':'var(--muted)'};
+      font-size:11px;font-weight:${c===selected?'700':'500'};font-family:'DM Sans',sans-serif;cursor:pointer;white-space:nowrap;transition:all .15s">
+      ${getCatIco(c)} ${c}
+    </button>`).join('');
+  hidden.value=selected||'Outros';
+  // If selected is custom (not in base list), show in input
+  if(!BASE_CATS.includes(selected)&&selected!=='Outros')customInput.value=selected;
+  else customInput.value='';
+}
+function selectCatChip(prefix, cat){
+  document.getElementById(prefix+'-cat').value=cat;
+  document.getElementById(prefix+'-cat-custom').value='';
+  renderCatChipPicker(prefix, cat);
+}
+function onCatCustomInput(prefix){
+  const val=document.getElementById(prefix+'-cat-custom').value.trim();
+  if(val){
+    document.getElementById(prefix+'-cat').value=val;
+    // deselect chips
+    const chips=document.getElementById(prefix+'-cat-chips');
+    chips.querySelectorAll('button').forEach(b=>{
+      const isSelected=false;
+      b.style.borderColor='var(--border2)';b.style.background='none';b.style.color='var(--muted)';b.style.fontWeight='500';
+    });
+  }
+}
 
 /* ── AUDIO ENGINE ── */
 let audioCtx=null;
@@ -767,7 +758,7 @@ function soundSave(){playTone(500,'sine',0.09,0.11,0);playTone(700,'sine',0.11,0
 let now=new Date(),curY=now.getFullYear(),curM=now.getMonth();
 let txData=JSON.parse(localStorage.getItem('fin_mob_tx')||'[]');
 let barInst=null,pieInst=null,lineInst=null,compareInst=null;
-let activeTab='home',activeCatFilter='all',sheetType='expense',editingId=null,editType='expense';
+let activeTab='report',activeCatFilter='all',sheetType='expense',editingId=null,editType='expense';
 let notifInterval=null;
 let planRule={ess:30,inv:30,pess:40};
 let activePlanRule='303040';
@@ -792,7 +783,7 @@ function goTab(tab){
   document.querySelectorAll('.nav-tab').forEach(b=>b.classList.remove('on'));
   document.getElementById('page-'+tab).classList.add('on');
   document.getElementById('tab-'+tab).classList.add('on');
-  document.getElementById('fab').style.display=(tab==='txs'||tab==='home')?'flex':'none';
+  document.getElementById('fab').style.display=(tab==='txs'||tab==='report')?'flex':'none';
   if(tab==='plan')renderPlan();
   if(tab==='report')renderReport();
 }
@@ -820,7 +811,7 @@ function openSheet(){
   setType('expense');
   document.getElementById('f-desc').value='';
   document.getElementById('f-val').value='';
-  document.getElementById('f-cat').value='Outros';
+  renderCatChipPicker('f','Outros');
   document.getElementById('sheet-overlay').classList.add('open');
   document.getElementById('sheet').classList.add('open');
   setTimeout(()=>document.getElementById('f-desc').focus(),350);
@@ -833,9 +824,9 @@ function setType(t){
   sheetType=t;
   document.getElementById('btn-exp').className='type-btn'+(t==='expense'?' active-exp':'');
   document.getElementById('btn-inc').className='type-btn'+(t==='income'?' active-inc':'');
-  // auto-set category
-  if(t==='income')document.getElementById('f-cat').value='Salário';
-  else if(document.getElementById('f-cat').value==='Salário')document.getElementById('f-cat').value='Outros';
+  const cur=document.getElementById('f-cat').value;
+  if(t==='income')renderCatChipPicker('f','Salário');
+  else if(cur==='Salário')renderCatChipPicker('f','Outros');
 }
 function addTx(){
   const desc=document.getElementById('f-desc').value.trim();
@@ -854,7 +845,7 @@ function editTx(id){
   editingId=id;setEditType(t.type);
   document.getElementById('e-desc').value=t.desc;
   document.getElementById('e-val').value=t.val;
-  document.getElementById('e-cat').value=t.cat||'Outros';
+  renderCatChipPicker('e',t.cat||'Outros');
   if(canSound())soundEdit();
   document.getElementById('edit-overlay').classList.add('open');
   document.getElementById('edit-sheet').classList.add('open');
@@ -1097,57 +1088,10 @@ function initNotif(){
 function render(){
   document.getElementById('month-label').textContent=`${MONTHS[curM].slice(0,3)} ${curY}`;
   const all=txData.filter(t=>t.month===curKey());
-  const prev=txData.filter(t=>t.month===prevKey());
-  const inc=all.filter(t=>t.type==='income').reduce((s,t)=>s+t.val,0);
-  const exp=all.filter(t=>t.type==='expense').reduce((s,t)=>s+t.val,0);
-  const bal=inc-exp;
-  const prevExp=prev.filter(t=>t.type==='expense').reduce((s,t)=>s+t.val,0);
-
-  // Hero
-  const heroEl=document.getElementById('hero-bal');
-  heroEl.textContent=fmt(bal);
-  heroEl.className='bal-val '+(bal<0?'neg':'pos');
-  document.getElementById('hero-inc').textContent=fmt(inc)+' receitas';
-  document.getElementById('hero-exp').textContent=fmt(exp)+' despesas';
-
-  // Comparativo banner
-  const banner=document.getElementById('comp-banner');
-  const compTxt=document.getElementById('comp-txt');
-  const prevMonthName=MONTHS[curM===0?11:curM-1];
-  if(prevExp>0&&exp>0){
-    const diff=((exp-prevExp)/prevExp*100);
-    const absDiff=Math.abs(diff).toFixed(0);
-    if(diff>5){
-      banner.className='comp-banner worse';
-      compTxt.innerHTML=`<b>⚠️ Atenção:</b> você gastou <b>${absDiff}% a mais</b> que em ${prevMonthName}.`;
-    }else if(diff<-5){
-      banner.className='comp-banner better';
-      compTxt.innerHTML=`<b>🎉 Ótimo!</b> Você gastou <b>${absDiff}% a menos</b> que em ${prevMonthName}.`;
-    }else{
-      banner.className='comp-banner neutral';
-      compTxt.innerHTML=`Seus gastos estão <b>estáveis</b> em comparação com ${prevMonthName}.`;
-    }
-  }else if(exp===0){
-    banner.className='comp-banner neutral';
-    compTxt.innerHTML=`Nenhuma despesa registrada neste mês ainda.`;
-  }else{
-    banner.className='comp-banner neutral';
-    compTxt.innerHTML=`Sem dados de ${prevMonthName} para comparar.`;
-  }
-
-  // Metrics
-  document.getElementById('m-inc').textContent=fmt(inc);
-  document.getElementById('m-exp').textContent=fmt(exp);
-  const incCt=all.filter(t=>t.type==='income').length;
-  const expCt=all.filter(t=>t.type==='expense').length;
-  document.getElementById('m-inc-ct').textContent=incCt+' lançamento'+(incCt!==1?'s':'');
-  document.getElementById('m-exp-ct').textContent=expCt+' lançamento'+(expCt!==1?'s':'');
-
-  renderHomeCharts(inc,exp,all);
   renderCatChips(all);
   renderTxList(all);
   if(activeTab==='plan')renderPlan();
-  if(activeTab==='report')renderReport();
+  if(activeTab==='report'||activeTab==='home')renderReport();
 }
 
 function renderHomeCharts(inc,exp,all){
@@ -1990,6 +1934,7 @@ let startY=0;
 
 initNotif();
 render();
+renderReport();
 
 // Redraw trading chart on resize/orientation change
 function redrawOnResize(){
