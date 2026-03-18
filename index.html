@@ -417,100 +417,54 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
 <!-- ── PAGE: PLANEJAR ── -->
 <div class="page" id="page-plan">
 
-  <!-- SUB-TABS -->
-  <div style="display:flex;gap:6px;margin-bottom:14px;overflow-x:auto;padding-bottom:4px;-webkit-overflow-scrolling:touch;flex-shrink:0">
-    <button class="plan-sub-tab on" id="psub-geral" onclick="goPlanTab('geral')">📊 Visão Geral</button>
-    <button class="plan-sub-tab" id="psub-regra" onclick="goPlanTab('regra')">⚖️ 30/30/40</button>
-    <button class="plan-sub-tab" id="psub-evolucao" onclick="goPlanTab('evolucao')">📈 Evolução</button>
-    <button class="plan-sub-tab" id="psub-meses" onclick="goPlanTab('meses')">📅 Por Mês</button>
+  <!-- SUB-TABS: só 2 abas -->
+  <div style="display:flex;gap:7px;margin-bottom:14px">
+    <button class="plan-sub-tab on" id="psub-metas" onclick="goPlanTab('metas')" style="flex:1">🎯 Metas</button>
+    <button class="plan-sub-tab" id="psub-regra" onclick="goPlanTab('regra')" style="flex:1">⚖️ Orçamento</button>
   </div>
 
-  <!-- ── SUB: VISÃO GERAL ── -->
-  <div id="planpage-geral">
-    <div style="background:linear-gradient(135deg,#1a2040,#12192e);border:1px solid rgba(91,158,255,.15);border-radius:20px;padding:18px;margin-bottom:12px">
-      <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px">Total acumulado</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;text-align:center">
-        <div><div style="font-family:var(--mono);font-size:16px;font-weight:600;color:var(--green)" id="plan-total-inc">R$0</div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-top:3px">Receitas</div></div>
-        <div><div style="font-family:var(--mono);font-size:16px;font-weight:600;color:var(--red)" id="plan-total-exp">R$0</div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-top:3px">Despesas</div></div>
-        <div><div style="font-family:var(--mono);font-size:16px;font-weight:600;color:var(--blue)" id="plan-total-bal">R$0</div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-top:3px">Saldo</div></div>
+  <!-- ── SUB: METAS ── -->
+  <div id="planpage-metas">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+      <div class="slbl" style="margin:0">Metas de economia</div>
+      <button onclick="openGoalSheet()" style="font-size:11px;padding:5px 12px;border-radius:99px;border:1px solid rgba(0,200,150,.35);background:var(--green-bg);color:var(--green);font-family:'DM Sans',sans-serif;cursor:pointer;font-weight:700">+ Nova meta</button>
+    </div>
+    <div id="goals-list">
+      <div style="background:var(--s1);border:1px solid var(--border);border-radius:14px;padding:22px;text-align:center;color:var(--muted);font-size:13px;line-height:1.7">
+        Nenhuma meta criada ainda.<br><span style="font-size:12px">Toque em "+ Nova meta" para começar.</span>
       </div>
-      <div style="margin-top:12px;font-size:11px;color:var(--muted);text-align:center" id="plan-months-range">—</div>
-    </div>
-    <div class="slbl">Mês atual vs anterior</div>
-    <div class="an-compare-grid" style="margin-bottom:12px">
-      <div class="an-compare-card"><div class="an-compare-label">Despesas</div><div class="an-compare-val r" id="an-cmp-exp">—</div><div class="an-compare-delta" id="an-cmp-exp-delta"></div></div>
-      <div class="an-compare-card"><div class="an-compare-label">Receitas</div><div class="an-compare-val g" id="an-cmp-inc">—</div><div class="an-compare-delta" id="an-cmp-inc-delta"></div></div>
-      <div class="an-compare-card"><div class="an-compare-label">Saldo</div><div class="an-compare-val b" id="an-cmp-bal">—</div><div class="an-compare-delta" id="an-cmp-bal-delta"></div></div>
-      <div class="an-compare-card"><div class="an-compare-label">Lançamentos</div><div class="an-compare-val a" id="an-cmp-ct">—</div><div class="an-compare-delta" id="an-cmp-ct-delta" style="color:var(--muted);font-size:11px"></div></div>
-    </div>
-    <div class="cat-breakdown">
-      <div class="cat-breakdown-head">🏷️ Maiores gastos do mês</div>
-      <div id="cat-breakdown-list"><div style="text-align:center;color:var(--muted);font-size:13px;padding:20px">Sem despesas neste mês</div></div>
-    </div>
-    <div class="an-chart-card" style="margin-top:12px">
-      <div class="an-chart-head"><div><div class="an-chart-title">Receitas vs Despesas</div><div class="an-chart-sub">Últimos 6 meses</div></div></div>
-      <div class="an-chart-inner" style="height:190px"><canvas id="compareChart"></canvas></div>
     </div>
   </div>
 
   <!-- ── SUB: ORÇAMENTO ── -->
   <div id="planpage-regra" style="display:none">
-
-    <!-- header com saldo base -->
     <div style="background:linear-gradient(135deg,#1a2040,#12192e);border:1px solid rgba(91,158,255,.15);border-radius:14px;padding:14px 16px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between">
       <div>
         <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:4px">Saldo disponível</div>
-        <div style="font-family:var(--mono);font-size:18px;font-weight:600;color:var(--blue)" id="budget-base-val">R$ 0,00</div>
-        <div style="font-size:11px;color:var(--muted);margin-top:2px" id="budget-base-lbl">Saldo do mês atual</div>
+        <div style="font-family:var(--mono);font-size:18px;font-weight:700;color:var(--blue)" id="budget-base-val">R$ 0,00</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px" id="budget-base-lbl">—</div>
       </div>
       <div style="text-align:right">
         <div style="font-size:10px;color:var(--muted);margin-bottom:4px">Alocado</div>
-        <div style="font-family:var(--mono);font-size:16px;font-weight:600" id="budget-alloc-pct">0%</div>
+        <div style="font-family:var(--mono);font-size:16px;font-weight:700" id="budget-alloc-pct">0%</div>
         <div style="font-size:11px;color:var(--muted);margin-top:2px" id="budget-alloc-val">R$ 0,00</div>
       </div>
     </div>
 
-    <!-- lista de categorias configuradas -->
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-      <div class="slbl" style="margin:0">Categorias do orçamento</div>
-      <button onclick="openBudgetAddSheet()" style="font-size:11px;padding:5px 12px;border-radius:99px;border:1px solid rgba(0,200,150,.35);background:var(--green-bg);color:var(--green);font-family:'DM Sans',sans-serif;cursor:pointer;font-weight:600">+ Adicionar</button>
+      <div class="slbl" style="margin:0">Envelopes mensais</div>
+      <button onclick="openBudgetAddSheet()" style="font-size:11px;padding:5px 12px;border-radius:99px;border:1px solid rgba(0,200,150,.35);background:var(--green-bg);color:var(--green);font-family:'DM Sans',sans-serif;cursor:pointer;font-weight:700">+ Adicionar</button>
     </div>
 
     <div id="budget-list">
       <div style="background:var(--s1);border:1px solid var(--border);border-radius:14px;padding:20px;text-align:center;color:var(--muted);font-size:13px">
-        Nenhuma categoria configurada.<br><span style="font-size:12px">Toque em "+ Adicionar" para começar.</span>
+        Nenhum envelope configurado.<br><span style="font-size:12px">Toque em "+ Adicionar" para dividir seu saldo.</span>
       </div>
     </div>
 
-    <div style="background:var(--s1);border:1px solid var(--border);border-radius:14px;padding:12px 14px;margin-top:10px" id="budget-remaining-card" style="display:none">
+    <div style="background:var(--s1);border:1px solid var(--border);border-radius:14px;padding:12px 14px;margin-top:10px">
       <div style="font-size:11px;color:var(--muted);margin-bottom:4px">Não alocado / Livre</div>
-      <div style="font-family:var(--mono);font-size:16px;font-weight:600" id="budget-free-val">—</div>
-    </div>
-  </div>
-
-  <!-- ── SUB: EVOLUÇÃO ── -->
-  <div id="planpage-evolucao" style="display:none">
-    <div class="an-chart-card">
-      <div class="an-chart-head">
-        <div><div class="an-chart-title">📈 Evolução financeira</div><div class="an-chart-sub">Saldo mês a mês — últimos 6 meses</div></div>
-        <div style="display:flex;gap:6px">
-          <div class="an-leg-item"><div style="width:10px;height:10px;border-radius:2px;background:#00C896;flex-shrink:0"></div><span style="font-size:10px;color:var(--muted2)">Positivo</span></div>
-          <div class="an-leg-item"><div style="width:10px;height:10px;border-radius:2px;background:#FF5C5C;flex-shrink:0"></div><span style="font-size:10px;color:var(--muted2)">Negativo</span></div>
-        </div>
-      </div>
-      <div class="an-chart-inner" style="height:260px;padding:12px 8px 14px"><canvas id="lineChart"></canvas></div>
-    </div>
-    <div class="an-chart-card" style="margin-top:12px">
-      <div class="an-chart-head"><div><div class="an-chart-title">💹 Saldo acumulado</div><div class="an-chart-sub">Patrimônio ao longo do tempo</div></div></div>
-      <div class="an-chart-inner" style="height:220px;padding:10px 6px 14px"><canvas id="growthChart"></canvas></div>
-    </div>
-  </div>
-
-  <!-- ── SUB: POR MÊS ── -->
-  <div id="planpage-meses" style="display:none">
-    <div class="slbl">Resumo por mês</div>
-    <div style="background:var(--s1);border:1px solid var(--border);border-radius:16px;overflow:hidden;margin-bottom:12px">
-      <div id="plan-months-table"></div>
+      <div style="font-family:var(--mono);font-size:16px;font-weight:700" id="budget-free-val">—</div>
     </div>
   </div>
 
@@ -605,6 +559,33 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
       <button onclick="clearAllData()" style="background:var(--red-bg);border:1px solid rgba(255,92,92,.25);color:var(--red);border-radius:8px;padding:8px 14px;font-size:12px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer">🗑️ Limpar</button>
     </div>
   </div>
+</div>
+
+<!-- GOAL SHEET -->
+<div class="sheet-overlay" id="goal-overlay" onclick="closeGoalSheet()"></div>
+<div class="sheet" id="goal-sheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-title" id="goal-sheet-title">Nova meta</div>
+  <div class="field">
+    <label>Nome da meta</label>
+    <input type="text" id="gf-name" placeholder="Ex: Viagem, Reserva, Carro…" autocomplete="off"/>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+    <div class="field">
+      <label>Emoji</label>
+      <input type="text" id="gf-ico" placeholder="🎯" maxlength="2"/>
+    </div>
+    <div class="field">
+      <label>Já guardado (R$)</label>
+      <input type="number" id="gf-saved" placeholder="0" min="0" step="0.01" inputmode="decimal"/>
+    </div>
+  </div>
+  <div class="field">
+    <label>Valor alvo (R$)</label>
+    <input type="number" id="gf-target" placeholder="5000,00" min="0" step="0.01" inputmode="decimal"/>
+  </div>
+  <button class="sheet-save" onclick="saveGoal()">Salvar meta</button>
+  <button class="sheet-cancel" onclick="closeGoalSheet()">Cancelar</button>
 </div>
 
 <!-- BUDGET ADD SHEET -->
@@ -814,20 +795,19 @@ function goTab(tab){
   document.getElementById('fab').style.display=(tab==='txs'||tab==='home')?'flex':'none';
   if(tab==='plan')renderPlan();
   if(tab==='report')renderReport();
-  if(tab==='report')renderReport();
 }
 
-let activePlanSubTab='geral';
+let activePlanSubTab='metas';
 function goPlanTab(sub){
   activePlanSubTab=sub;
-  ['geral','regra','evolucao','meses'].forEach(s=>{
-    document.getElementById('planpage-'+s).style.display=s===sub?'block':'none';
-    document.getElementById('psub-'+s).classList.toggle('on',s===sub);
+  ['metas','regra'].forEach(s=>{
+    const pg=document.getElementById('planpage-'+s);
+    const btn=document.getElementById('psub-'+s);
+    if(pg)pg.style.display=s===sub?'block':'none';
+    if(btn)btn.classList.toggle('on',s===sub);
   });
-  if(sub==='evolucao')renderEvolution();
-  if(sub==='geral')renderPlanGeral();
   if(sub==='regra')renderPlanRegra();
-  if(sub==='meses')renderPlanMeses();
+  if(sub==='metas')renderGoals();
 }
 
 function changeMonth(d){
@@ -1369,102 +1349,18 @@ function drawTradingChart(months){
 
 /* ── PLAN DISPATCH ── */
 function renderPlan(){
-  if(activePlanSubTab==='geral')renderPlanGeral();
-  else if(activePlanSubTab==='regra')renderPlanRegra();
-  else if(activePlanSubTab==='evolucao')renderEvolution();
-  else if(activePlanSubTab==='meses')renderPlanMeses();
+  if(activePlanSubTab==='regra')renderPlanRegra();
+  else renderGoals();
 }
 
-/* ── PLAN: VISÃO GERAL (uses analysis data) ── */
-function renderPlanGeral(){
-  if(lineInst)lineInst.destroy();
-  if(compareInst)compareInst.destroy();
-
-  const allMonths=[];
-  for(let i=5;i>=0;i--){
-    let m=curM-i,y=curY;
-    while(m<0){m+=12;y--}
-    const key=`${y}-${m}`;
-    const txs=txData.filter(t=>t.month===key);
-    const inc=txs.filter(t=>t.type==='income').reduce((s,t)=>s+t.val,0);
-    const exp=txs.filter(t=>t.type==='expense').reduce((s,t)=>s+t.val,0);
-    allMonths.push({label:MONTHS[m].slice(0,3),inc,exp,bal:inc-exp,key,m,y,hasTx:txs.length>0});
-  }
-  let months=allMonths.filter(m=>m.hasTx||m.key===curKey());
-  if(months.length<2){const extras=allMonths.filter(m=>!m.hasTx&&m.key!==curKey());months=[...extras.slice(-(2-months.length)),...months]}
-
-  const curTxs=txData.filter(t=>t.month===curKey());
-  const prevTxs=txData.filter(t=>t.month===prevKey());
-  const curExp=curTxs.filter(t=>t.type==='expense').reduce((s,t)=>s+t.val,0);
-  const prevExp=prevTxs.filter(t=>t.type==='expense').reduce((s,t)=>s+t.val,0);
-  const curInc=curTxs.filter(t=>t.type==='income').reduce((s,t)=>s+t.val,0);
-  const prevInc=prevTxs.filter(t=>t.type==='income').reduce((s,t)=>s+t.val,0);
-  const curBal=curInc-curExp,prevBal=prevInc-prevExp;
-  const prevMonthName=MONTHS[curM===0?11:curM-1];
-
-  function deltaHTML(cur,prev,invertColor){
-    if(prev===0)return'<span style="color:var(--muted);font-size:11px">Sem dados anteriores</span>';
-    const d=((cur-prev)/prev*100);const sign=d>=0?'▲ +':'▼ ';
-    const isGood=invertColor?(d<0):(d>0);const color=Math.abs(d)<2?'var(--muted)':isGood?'var(--green)':'var(--red)';
-    return`<span style="color:${color};font-size:11px;font-weight:600">${sign}${Math.abs(d).toFixed(0)}% vs ${prevMonthName}</span>`;
-  }
-  document.getElementById('an-cmp-exp').textContent=fmt(curExp);document.getElementById('an-cmp-exp-delta').innerHTML=deltaHTML(curExp,prevExp,true);
-  document.getElementById('an-cmp-inc').textContent=fmt(curInc);document.getElementById('an-cmp-inc-delta').innerHTML=deltaHTML(curInc,prevInc,false);
-  document.getElementById('an-cmp-bal').textContent=fmt(curBal);
-  document.getElementById('an-cmp-bal').className='an-compare-val '+(curBal<0?'r':'b');
-  document.getElementById('an-cmp-bal-delta').innerHTML=deltaHTML(curBal,prevBal,false);
-  document.getElementById('an-cmp-ct').textContent=curTxs.length;
-  document.getElementById('an-cmp-ct-delta').textContent=`${prevTxs.length} em ${prevMonthName}`;
-
-  // category breakdown
-  const cats={};curTxs.filter(t=>t.type==='expense').forEach(t=>{const k=t.cat||'Outros';cats[k]=(cats[k]||0)+t.val});
-  const sortedCats=Object.entries(cats).sort((a,b)=>b[1]-a[1]);
-  const totalExp=sortedCats.reduce((s,[,v])=>s+v,0);const maxVal=sortedCats[0]?sortedCats[0][1]:1;
-  const breakdown=document.getElementById('cat-breakdown-list');
-  if(sortedCats.length===0){breakdown.innerHTML='<div style="text-align:center;color:var(--muted);font-size:13px;padding:20px">Sem despesas neste mês</div>'}
-  else{breakdown.innerHTML=sortedCats.slice(0,6).map(([cat,val],i)=>{
-    const pct=totalExp>0?((val/totalExp)*100).toFixed(0):0;const barW=maxVal>0?((val/maxVal)*100).toFixed(0):0;
-    const ico=CAT_ICONS[cat]||'💸';const color=PALETTE[i%PALETTE.length];
-    return`<div class="cat-row"><div class="cat-row-ico" style="background:${color}22">${ico}</div>
-      <div class="cat-row-body"><div class="cat-row-name">${cat}</div>
-      <div class="cat-row-bar-bg"><div class="cat-row-bar-fill" style="width:${barW}%;background:${color}"></div></div></div>
-      <div class="cat-row-right"><div class="cat-row-val" style="color:${color}">${fmt(val)}</div><div class="cat-row-pct">${pct}% do total</div></div></div>`;
-  }).join('')}
-
-  // bar chart
-  if(compareInst)compareInst.destroy();
-  const vis=months.filter(m=>m.hasTx||m.key===curKey());
-  compareInst=new Chart(document.getElementById('compareChart'),{type:'bar',
-    data:{labels:vis.map(m=>m.label),datasets:[
-      {label:'Receitas',data:vis.map(m=>m.inc),backgroundColor:'rgba(0,200,150,.2)',borderColor:'#00C896',borderWidth:1.5,borderRadius:7,borderSkipped:false},
-      {label:'Despesas',data:vis.map(m=>m.exp),backgroundColor:'rgba(255,92,92,.2)',borderColor:'#FF5C5C',borderWidth:1.5,borderRadius:7,borderSkipped:false}
-    ]},
-    options:{responsive:true,maintainAspectRatio:false,
-      plugins:{legend:{display:true,position:'top',align:'start',labels:{color:'#9AA0BA',font:{size:11,family:'DM Sans'},boxWidth:10,padding:14,usePointStyle:true,pointStyle:'circle'}},
-        tooltip:{backgroundColor:'#1D2235',borderColor:'rgba(255,255,255,.12)',borderWidth:1,titleColor:'#EEF0FF',bodyColor:'#9AA0BA',padding:12,callbacks:{label:ctx=>`  ${ctx.dataset.label}: ${fmt(ctx.raw)}`}}},
-      scales:{x:{grid:{display:false},ticks:{color:'#6B738F',font:{size:11,family:'DM Sans'},padding:4},border:{display:false}},
-        y:{grid:{color:'rgba(255,255,255,.04)',drawBorder:false},ticks:{color:'#6B738F',font:{size:10,family:'DM Mono'},callback:v=>fmtS(v),maxTicksLimit:5},border:{display:false}}}}
-  });
-
-  // also update plan totals
-  _renderPlanTotals();
-}
+/* renderPlanGeral removed */
 
 function _renderPlanTotals(){
   const monthMap={};
   txData.forEach(t=>{if(!monthMap[t.month])monthMap[t.month]={inc:0,exp:0};if(t.type==='income')monthMap[t.month].inc+=t.val;else monthMap[t.month].exp+=t.val});
   const months=Object.keys(monthMap).sort();
-  if(!months.length){
-    document.getElementById('plan-total-inc').textContent='R$0';document.getElementById('plan-total-exp').textContent='R$0';document.getElementById('plan-total-bal').textContent='R$0';
-    document.getElementById('plan-months-range').textContent='Nenhum lançamento ainda';return;
-  }
+  if(!months.length) return null;
   const tI=months.reduce((s,k)=>s+monthMap[k].inc,0),tE=months.reduce((s,k)=>s+monthMap[k].exp,0),tB=tI-tE;
-  document.getElementById('plan-total-inc').textContent=fmt(tI);document.getElementById('plan-total-exp').textContent=fmt(tE);
-  document.getElementById('plan-total-bal').textContent=fmt(tB);document.getElementById('plan-total-bal').style.color=tB>=0?'var(--blue)':'var(--red)';
-  const MN=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
-  const pk=k=>{const[y,m]=k.split('-').map(Number);return{y,m}};
-  const f=pk(months[0]),l=pk(months[months.length-1]);
-  document.getElementById('plan-months-range').textContent=months.length===1?MN[f.m]+'/'+f.y:MN[f.m]+'/'+f.y+' → '+MN[l.m]+'/'+l.y+' ('+months.length+' meses)';
   return{monthMap,months,tI,tE,tB};
 }
 
@@ -1532,90 +1428,9 @@ function renderPlanRegra(){
     }).join('')+'</div>';
 }
 
-/* ── PLAN: POR MÊS ── */
-function renderPlanMeses(){
-  _renderPlanTotals();
-  const monthMap={};
-  txData.forEach(t=>{if(!monthMap[t.month])monthMap[t.month]={inc:0,exp:0};if(t.type==='income')monthMap[t.month].inc+=t.val;else monthMap[t.month].exp+=t.val});
-  const months=Object.keys(monthMap).sort();
-  const MN=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
-  if(!months.length){document.getElementById('plan-months-table').innerHTML='<div style="padding:20px;text-align:center;color:var(--muted);font-size:13px">—</div>';return}
-  document.getElementById('plan-months-table').innerHTML=months.slice().reverse().map(k=>{
-    const d=monthMap[k];const[y,m]=k.split('-').map(Number);const bal=d.inc-d.exp;
-    return`<div class="plan-month-row">
-      <div style="width:80px;color:var(--muted2);font-size:12px">${MN[m].slice(0,3)} ${y}</div>
-      <div style="flex:1">
-        <div style="display:flex;gap:6px;font-size:12px">
-          <span style="color:var(--green)">↑ ${fmtS(d.inc)}</span>
-          <span style="color:var(--red)">↓ ${fmtS(d.exp)}</span>
-        </div>
-        <div style="height:3px;background:var(--border);border-radius:99px;margin-top:5px;overflow:hidden">
-          <div style="height:3px;border-radius:99px;background:${d.exp>d.inc?'var(--red)':'var(--green)'};width:${d.inc>0?Math.min(100,(d.exp/d.inc)*100).toFixed(0):100}%"></div>
-        </div>
-      </div>
-      <div style="font-family:var(--mono);font-size:12px;color:${bal>=0?'var(--green)':'var(--red)'};min-width:60px;text-align:right">${bal>=0?'+':''}${fmtS(bal)}</div>
-    </div>`;
-  }).join('');
-}
+/* renderPlanMeses removed */
 
-/* ── PLAN: EVOLUÇÃO (trading + growth line) ── */
-let growthInst=null;
-function renderEvolution(){
-  // Trading candlestick chart
-  const allMonths=[];
-  for(let i=5;i>=0;i--){
-    let m=curM-i,y=curY;while(m<0){m+=12;y--}
-    const key=`${y}-${m}`;const txs=txData.filter(t=>t.month===key);
-    const inc=txs.filter(t=>t.type==='income').reduce((s,t)=>s+t.val,0);
-    const exp=txs.filter(t=>t.type==='expense').reduce((s,t)=>s+t.val,0);
-    allMonths.push({label:MONTHS[m].slice(0,3),inc,exp,bal:inc-exp,key,m,y,hasTx:txs.length>0});
-  }
-  let months=allMonths.filter(m=>m.hasTx||m.key===curKey());
-  if(months.length<2){const extras=allMonths.filter(m=>!m.hasTx&&m.key!==curKey());months=[...extras.slice(-(2-months.length)),...months]}
-  drawTradingChart(months);
-
-  // Growth (cumulative) line chart via Chart.js
-  if(growthInst)growthInst.destroy();
-  const gData=[];
-  for(let i=11;i>=0;i--){
-    let m=curM-i,y=curY;while(m<0){m+=12;y--}
-    const key=`${y}-${m}`;const txs=txData.filter(t=>t.month===key);
-    const inc=txs.filter(t=>t.type==='income').reduce((s,t)=>s+t.val,0);
-    const exp=txs.filter(t=>t.type==='expense').reduce((s,t)=>s+t.val,0);
-    gData.push({label:MONTHS[m].slice(0,3),bal:inc-exp,hasTx:txs.length>0});
-  }
-  let start=0;while(start<gData.length-2&&!gData[start].hasTx)start++;
-  const pts=gData.slice(start);
-  let cum=0;const cumBals=pts.map(d=>{cum+=d.bal;return cum});
-  const lastVal=cumBals[cumBals.length-1];
-  const lineColor=lastVal>=0?'#00C896':'#FF5C5C';
-  const canvas=document.getElementById('growthChart');
-  const ctx2=canvas.getContext('2d');
-  const grad=ctx2.createLinearGradient(0,0,0,220);
-  grad.addColorStop(0,lastVal>=0?'rgba(0,200,150,.25)':'rgba(255,92,92,.25)');
-  grad.addColorStop(1,'rgba(0,0,0,0)');
-  growthInst=new Chart(canvas,{type:'line',
-    data:{labels:pts.map(d=>d.label),datasets:[
-      {label:'Saldo acumulado',data:cumBals,borderColor:lineColor,borderWidth:2.5,
-        pointBackgroundColor:cumBals.map(v=>v>=0?'#00C896':'#FF5C5C'),
-        pointBorderColor:'#161B27',pointBorderWidth:2,pointRadius:5,pointHoverRadius:8,
-        fill:true,backgroundColor:grad,tension:.42},
-      {label:'Saldo mês',data:pts.map(d=>d.bal),borderColor:'rgba(255,255,255,.3)',borderWidth:1.5,
-        pointRadius:3,fill:false,tension:.35,borderDash:[4,4]}
-    ]},
-    options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
-      plugins:{
-        legend:{display:true,position:'top',align:'start',labels:{color:'#9AA0BA',font:{size:11,family:'DM Sans'},boxWidth:10,padding:14,usePointStyle:true,pointStyle:'circle'}},
-        tooltip:{backgroundColor:'#1D2235',borderColor:'rgba(255,255,255,.12)',borderWidth:1,titleColor:'#EEF0FF',bodyColor:'#9AA0BA',padding:12,
-          callbacks:{title:i=>'📅 '+i[0].label,label:c=>`  ${c.dataset.label}: ${c.raw>=0?'+':''}${fmt(c.raw)}`}}
-      },
-      scales:{
-        x:{grid:{display:false},ticks:{color:'#6B738F',font:{size:10,family:'DM Sans'}},border:{display:false}},
-        y:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#6B738F',font:{size:9,family:'DM Mono'},callback:v=>fmtS(v),maxTicksLimit:6},border:{display:false}}
-      }
-    }
-  });
-}
+/* renderEvolution removed */
 
 function setPlanRule(r){
   activePlanRule=r;
@@ -1639,6 +1454,90 @@ function updateSliders(changed){
   const sum=e+i+p;const warn=document.getElementById('slider-sum-warn');
   if(sum===100){warn.textContent='✓ Soma: 100%';warn.style.color='var(--green)';planRule={ess:e,inv:i,pess:p};renderPlanRegra();}
   else{warn.textContent='Soma: '+sum+'% (precisa ser 100%)';warn.style.color='var(--amber)';}
+}
+
+/* ── METAS DE ECONOMIA ── */
+let goalData=JSON.parse(localStorage.getItem('fin_goals')||'[]');
+function saveGoals(){localStorage.setItem('fin_goals',JSON.stringify(goalData))}
+
+function openGoalSheet(id){
+  const g=id?goalData.find(x=>x.id===id):null;
+  document.getElementById('goal-sheet-title').textContent=g?'Editar meta':'Nova meta';
+  document.getElementById('gf-name').value=g?g.name:'';
+  document.getElementById('gf-target').value=g?g.target:'';
+  document.getElementById('gf-saved').value=g?g.saved:0;
+  document.getElementById('gf-ico').value=g?g.ico:'🎯';
+  document.getElementById('goal-sheet').dataset.editId=id||'';
+  document.getElementById('goal-overlay').classList.add('open');
+  document.getElementById('goal-sheet').classList.add('open');
+  setTimeout(()=>document.getElementById('gf-name').focus(),350);
+}
+function closeGoalSheet(){
+  document.getElementById('goal-overlay').classList.remove('open');
+  document.getElementById('goal-sheet').classList.remove('open');
+}
+function saveGoal(){
+  const name=document.getElementById('gf-name').value.trim();
+  const target=parseFloat(document.getElementById('gf-target').value)||0;
+  const saved=parseFloat(document.getElementById('gf-saved').value)||0;
+  const ico=document.getElementById('gf-ico').value.trim()||'🎯';
+  if(!name||target<=0){showToast('Preencha nome e valor alvo!');return}
+  const editId=document.getElementById('goal-sheet').dataset.editId;
+  if(editId){
+    const g=goalData.find(x=>x.id==editId);
+    if(g){g.name=name;g.target=target;g.saved=saved;g.ico=ico}
+  }else{
+    goalData.push({id:Date.now(),name,target,saved,ico});
+  }
+  saveGoals();closeGoalSheet();renderGoals();showToast('Meta salva ✓');
+}
+function addToGoal(id){
+  const val=parseFloat(prompt('Quanto guardar agora? (R$)'));
+  if(!val||val<=0)return;
+  const g=goalData.find(x=>x.id===id);
+  if(g){g.saved=Math.min(g.target,g.saved+val);saveGoals();renderGoals();showToast(`+${fmt(val)} guardado!`)}
+}
+function delGoal(id){
+  goalData=goalData.filter(x=>x.id!==id);saveGoals();renderGoals();showToast('Meta removida');
+}
+function renderGoals(){
+  const el=document.getElementById('goals-list');
+  if(!el)return;
+  if(!goalData.length){
+    el.innerHTML='<div style="background:var(--s1);border:1px solid var(--border);border-radius:14px;padding:22px;text-align:center;color:var(--muted);font-size:13px;line-height:1.7">Nenhuma meta criada ainda.<br><span style="font-size:12px">Toque em "+ Nova meta" para começar.</span></div>';
+    return;
+  }
+  el.innerHTML=goalData.map(g=>{
+    const pct=g.target>0?Math.min(100,(g.saved/g.target)*100):0;
+    const done=pct>=100;
+    const color=done?'var(--green)':pct>60?'var(--blue)':pct>30?'var(--amber)':'var(--muted2)';
+    return`<div style="background:var(--s1);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:10px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="width:38px;height:38px;border-radius:11px;background:${color}22;display:flex;align-items:center;justify-content:center;font-size:18px">${g.ico}</div>
+          <div>
+            <div style="font-size:14px;font-weight:700">${g.name}</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:1px">Meta: ${fmt(g.target)}</div>
+          </div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-family:var(--mono);font-size:16px;font-weight:700;color:${color}">${fmt(g.saved)}</div>
+          <div style="font-size:10px;color:var(--muted);margin-top:1px">${pct.toFixed(0)}% atingido</div>
+        </div>
+      </div>
+      <div style="height:8px;background:var(--border);border-radius:99px;overflow:hidden;margin-bottom:10px">
+        <div style="height:8px;border-radius:99px;background:${color};width:${pct.toFixed(0)}%;transition:width .7s ease"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div style="font-size:11px;color:var(--muted)">${done?'✅ Meta atingida!':'Faltam '+fmt(g.target-g.saved)}</div>
+        <div style="display:flex;gap:6px">
+          ${!done?`<button onclick="addToGoal(${g.id})" style="background:var(--green-bg);border:1px solid rgba(0,200,150,.3);color:var(--green);border-radius:8px;padding:6px 12px;font-size:11px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer">+ Guardar</button>`:''}
+          <button onclick="openGoalSheet(${g.id})" style="background:none;border:1px solid var(--border2);color:var(--muted);border-radius:8px;padding:6px 10px;font-size:11px;font-family:'DM Sans',sans-serif;cursor:pointer">✏️</button>
+          <button onclick="delGoal(${g.id})" style="background:none;border:1px solid var(--border2);color:var(--muted);border-radius:8px;padding:6px 10px;font-size:11px;font-family:'DM Sans',sans-serif;cursor:pointer">✕</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
 }
 
 /* ── BUDGET (Orçamento por categoria) ── */
@@ -2105,6 +2004,8 @@ document.getElementById('text-sheet').addEventListener('touchstart',e=>{startY=e
 document.getElementById('text-sheet').addEventListener('touchmove',e=>{if(e.touches[0].clientY-startY>70)closeTextSheet()},{passive:true});
 document.getElementById('budget-sheet').addEventListener('touchstart',e=>{startY=e.touches[0].clientY},{passive:true});
 document.getElementById('budget-sheet').addEventListener('touchmove',e=>{if(e.touches[0].clientY-startY>70)closeBudgetAddSheet()},{passive:true});
+document.getElementById('goal-sheet').addEventListener('touchstart',e=>{startY=e.touches[0].clientY},{passive:true});
+document.getElementById('goal-sheet').addEventListener('touchmove',e=>{if(e.touches[0].clientY-startY>70)closeGoalSheet()},{passive:true});
 
 /* ── VERSION / DEPLOY CHECK ── */
 const DEPLOY_COMMIT='4c304cb';
