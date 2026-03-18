@@ -2094,7 +2094,7 @@ async function checkForNewDeploy(){
       if(hashEl)hashEl.textContent=DEPLOY_COMMIT+'→'+latestSha;
       if(timeEl)timeEl.textContent='pendente';
       badge.style.color='var(--amber)';badge.style.borderColor='rgba(255,184,77,.35)';badge.style.background='var(--amber-bg)';
-      badge.title='Novo commit no GitHub ainda não deployado: '+latestSha;
+      badge.title='Novo commit nno GitHub ainda não deployado: '+latestSha;
     } else {
       // commit matches deploy — record first seen time
       if(!localStorage.getItem(DEPLOY_TIME_KEY)){
