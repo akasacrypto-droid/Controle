@@ -973,12 +973,14 @@ function testNotif(){
 /* ── EXPORT / IMPORT ── */
 function exportData(){
   const total=txData.length;
-  if(total===0){showToast('Nenhum dado para exportar');return}
+  if(total===0&&goalData.length===0&&budgetItems.length===0){showToast('Nenhum dado para exportar');return}
   const payload={
-    version:1,
+    version:2,
     exportedAt:new Date().toISOString(),
     totalRecords:total,
-    data:txData
+    data:txData,
+    goals:goalData,
+    budget:budgetItems
   };
   const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
   const url=URL.createObjectURL(blob);
@@ -986,36 +988,42 @@ function exportData(){
   const date=new Date().toISOString().slice(0,10);
   a.href=url;
   a.download=`financas_backup_${date}.json`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-  document.getElementById('export-sub').textContent=`${total} lançamentos exportados`;
-  showToast(`✅ ${total} lançamentos exportados!`);
+  document.body.appendChild(a);a.click();
+  document.body.removeChild(a);URL.revokeObjectURL(url);
+  const parts=[];
+  if(total)parts.push(total+' lançamentos');
+  if(goalData.length)parts.push(goalData.length+' metas');
+  if(budgetItems.length)parts.push(budgetItems.length+' envelopes');
+  const el=document.getElementById('export-sub');
+  if(el)el.textContent=parts.join(' · ')+' exportados';
+  showToast('✅ Backup completo exportado!');
 }
 
 function importData(event){
-  const file=event.target.files[0];
-  if(!file)return;
+  const file=event.target.files[0];if(!file)return;
   const reader=new FileReader();
   reader.onload=e=>{
     try{
       const parsed=JSON.parse(e.target.result);
       let imported=[];
-      // support both raw array and our wrapped format
-      if(Array.isArray(parsed))imported=parsed;
-      else if(parsed.data&&Array.isArray(parsed.data))imported=parsed.data;
-      else{showToast('❌ Arquivo inválido');return}
-      if(imported.length===0){showToast('Arquivo não tem lançamentos');return}
+      let importedGoals=null,importedBudget=null;
+      if(Array.isArray(parsed)){imported=parsed;}
+      else if(parsed.data&&Array.isArray(parsed.data)){
+        imported=parsed.data;
+        if(Array.isArray(parsed.goals))importedGoals=parsed.goals;
+        if(Array.isArray(parsed.budget))importedBudget=parsed.budget;
+      }else{showToast('❌ Arquivo inválido');return}
 
-      // open import confirm sheet
-      pendingImport=imported;
-      document.getElementById('import-count').textContent=imported.length;
+      pendingImport={txs:imported,goals:importedGoals,budget:importedBudget};
+      const el=document.getElementById('import-count');
+      const parts=[];
+      if(imported.length)parts.push(imported.length+' lançamentos');
+      if(importedGoals&&importedGoals.length)parts.push(importedGoals.length+' metas');
+      if(importedBudget&&importedBudget.length)parts.push(importedBudget.length+' envelopes');
+      if(el)el.textContent=parts.join(', ')||'0';
       document.getElementById('import-overlay').classList.add('open');
       document.getElementById('import-sheet').classList.add('open');
-    }catch(err){
-      showToast('❌ Erro ao ler arquivo');
-    }
+    }catch(err){showToast('❌ Erro ao ler arquivo')}
     event.target.value='';
   };
   reader.readAsText(file);
@@ -1024,19 +1032,23 @@ function importData(event){
 let pendingImport=null;
 function confirmImport(mode){
   if(!pendingImport)return;
+  const{txs,goals,budget}=pendingImport;
   if(mode==='replace'){
-    txData=pendingImport;
+    txData=txs;
+    if(goals)goalData=goals;
+    if(budget)budgetItems=budget;
   }else{
-    // merge: add only IDs that don't exist
     const existingIds=new Set(txData.map(t=>t.id));
-    const newOnes=pendingImport.filter(t=>!existingIds.has(t.id));
+    const newOnes=txs.filter(t=>!existingIds.has(t.id));
     txData=[...txData,...newOnes];
-    showToast(`✅ ${newOnes.length} novos lançamentos adicionados`);
+    if(goals){const eG=new Set(goalData.map(g=>g.id));goalData=[...goalData,...goals.filter(g=>!eG.has(g.id))]}
+    if(budget){const eB=new Set(budgetItems.map(b=>b.id));budgetItems=[...budgetItems,...budget.filter(b=>!eB.has(b.id))]}
+    showToast(`✅ ${newOnes.length} lançamentos adicionados`);
   }
   pendingImport=null;
-  closeImport();
-  save();render();
-  if(mode==='replace')showToast(`✅ ${txData.length} lançamentos importados`);
+  saveGoals();saveBudgetData();
+  closeImport();save();render();
+  if(mode==='replace')showToast('✅ Backup restaurado com sucesso!');
 }
 function closeImport(){
   pendingImport=null;
@@ -1051,9 +1063,9 @@ function clearAllData(){
 }
 let pendingClear=false;
 function confirmClear(){
-  txData=[];save();render();
-  pendingClear=false;
-  closeClear();
+  txData=[];goalData=[];budgetItems=[];
+  save();saveGoals();saveBudgetData();render();
+  pendingClear=false;closeClear();
   showToast('Todos os dados apagados');
 }
 function closeClear(){
