@@ -679,7 +679,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
         <div id="msheet-max" style="font-family:'DM Mono',monospace;font-size:12px;font-weight:700;color:var(--green)">—</div>
       </div>
     </div>
-    <button onclick="document.getElementById('conv-de').value='BRL';document.getElementById('conv-para').value=_moedaSheetCode;calcConv();closeMoedaSheet()" style="width:100%;padding:13px;background:var(--blue-bg);border:1px solid rgba(91,158,255,.25);border-radius:12px;color:var(--blue);font-size:13px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;margin-bottom:8px">💱 Converter esta moeda</button>
+    <button onclick="document.getElementById('conv-para').value=_moedaSheetCode;calcConv();closeMoedaSheet()" style="width:100%;padding:13px;background:var(--blue-bg);border:1px solid rgba(91,158,255,.25);border-radius:12px;color:var(--blue);font-size:13px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;margin-bottom:8px">💱 Converter esta moeda</button>
     <button onclick="closeMoedaSheet();setTimeout(()=>openAlertSheet(_moedaSheetCode),200)" style="width:100%;padding:13px;background:var(--green-bg);border:1px solid rgba(0,200,150,.25);border-radius:12px;color:var(--green);font-size:13px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer">🔔 Criar alerta para esta moeda</button>
   </div>
 
@@ -2750,12 +2750,11 @@ tr+tr td{border-top:1px solid #f3f3f3}
   }
 
   function setCryptoConv(code){
+    // Usa a moeda base atual do conversor, não força BRL
     const deEl = document.getElementById('conv-de');
     const paEl = document.getElementById('conv-para');
-    if(deEl) deEl.value = 'BRL';
     if(paEl) paEl.value = code;
     if(window.calcConv) calcConv();
-    deEl?.scrollIntoView({behavior:'smooth',block:'center'});
   }
   window.setCryptoConv = setCryptoConv;
 
@@ -2942,13 +2941,13 @@ tr+tr td{border-top:1px solid #f3f3f3}
     if(taxa1 !== null)
       document.getElementById('conv-taxa').textContent = `1 ${de} = ${fmtVal(taxa1, para)} ${para}`;
 
-    // Re-renderiza listas com nova moeda base
+    // Re-renderiza lista só quando a moeda BASE (De) muda
     const prevBase = window._listBase;
     window._listBase = de;
     if(prevBase !== de){
-      const tab = document.getElementById('crypto-grid')?.style.display !== 'none' ? 'crypto' : 'fiat';
-      if(tab === 'fiat' && document.getElementById('cambio-grid')?.style.display !== 'none') renderGrid();
-      if(tab === 'crypto' && window._renderCryptoGrid) window._renderCryptoGrid();
+      const isCryptoTab = document.getElementById('crypto-grid')?.style.display !== 'none';
+      if(!isCryptoTab && document.getElementById('cambio-grid')?.style.display !== 'none') renderGrid();
+      if(isCryptoTab && window._renderCryptoGrid) window._renderCryptoGrid();
     }
   };
 
@@ -3033,40 +3032,54 @@ tr+tr td{border-top:1px solid #f3f3f3}
     document.querySelectorAll('[id^=mper-]').forEach(b=>b.classList.remove('on'));
     document.getElementById('mper-7')?.classList.add('on');
 
-    const flagEl = document.getElementById('msheet-flag');
+    const flagEl  = document.getElementById('msheet-flag');
     const flagIco = document.getElementById('msheet-flagico');
-    const codeEl = document.getElementById('msheet-code');
+    const codeEl  = document.getElementById('msheet-code');
 
     if(isCrypto){
-      const cm = CRYPTO_META[code];
-      flagEl.style.background = cm.color+'22';
-      flagEl.style.borderColor = cm.color+'55';
-      flagIco.style.color = cm.color;
-      flagIco.style.fontSize = '20px';
-      flagIco.textContent = cm.ico;
-      codeEl.style.color = cm.color;
+      // Garante que as taxas crypto estão carregadas
+      if(window._fetchCrypto) await window._fetchCrypto(false);
+
+      const cm = CRYPTO_META[code] || {ico:'₿', color:'#F7931A'};
+      flagEl.style.background   = cm.color+'22';
+      flagEl.style.borderColor  = cm.color+'55';
+      flagIco.style.color       = cm.color;
+      flagIco.style.fontSize    = '20px';
+      flagIco.textContent       = cm.ico;
+      codeEl.style.color        = cm.color;
       const cnames = {BTC:'Bitcoin',ETH:'Ethereum',BNB:'BNB',SOL:'Solana',XRP:'XRP',ADA:'Cardano',DOGE:'Dogecoin',DOT:'Polkadot'};
       document.getElementById('msheet-name').textContent = cnames[code]||code;
       const price = window._cryptoRatesInBRL?.()?.[code];
-      document.getElementById('msheet-rate').textContent = price ? `R$ ${price.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})} por 1 ${code}` : '—';
+      document.getElementById('msheet-rate').textContent = price
+        ? `R$ ${price.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})} por 1 ${code}` : '—';
       const pct = window._cryptoChange24h?.()?.[code];
       const varEl = document.getElementById('msheet-var');
-      if(pct != null){ const up=pct>=0; varEl.textContent=`${up?'▲':'▼'} ${Math.abs(pct).toFixed(2)}%`; varEl.style.color=up?'var(--green)':'var(--red)'; varEl.style.background=up?'rgba(0,200,150,.12)':'rgba(255,92,92,.12)'; }
-      else varEl.textContent='';
+      if(pct != null){
+        const up = pct>=0;
+        varEl.textContent = `${up?'▲':'▼'} ${Math.abs(pct).toFixed(2)}%`;
+        varEl.style.color = up?'var(--green)':'var(--red)';
+        varEl.style.background = up?'rgba(0,200,150,.12)':'rgba(255,92,92,.12)';
+      } else { varEl.textContent=''; }
     } else {
       const m = MOEDAS.find(x=>x.code===code);
       if(!m) return;
-      flagEl.style.background='var(--s2)'; flagEl.style.borderColor='var(--border2)';
-      flagIco.style.color=''; flagIco.style.fontSize='18px';
-      flagIco.textContent = m.flag;
-      codeEl.style.color = 'var(--muted)';
+      flagEl.style.background   = 'var(--s2)';
+      flagEl.style.borderColor  = 'var(--border2)';
+      flagIco.style.color       = '';
+      flagIco.style.fontSize    = '18px';
+      flagIco.textContent       = m.flag;
+      codeEl.style.color        = 'var(--muted)';
       document.getElementById('msheet-name').textContent = m.name;
       const rate = ratesInBRL[code];
       document.getElementById('msheet-rate').textContent = rate ? `R$ ${fmtVal(rate,'BRL')} por 1 ${code}` : '—';
       const pct = getVar(code);
       const varEl = document.getElementById('msheet-var');
-      if(pct !== null){ const up=pct>=0; varEl.textContent=`${up?'▲':'▼'} ${Math.abs(pct).toFixed(2)}%`; varEl.style.color=up?'var(--green)':'var(--red)'; varEl.style.background=up?'rgba(0,200,150,.12)':'rgba(255,92,92,.12)'; }
-      else varEl.textContent='';
+      if(pct !== null){
+        const up = pct>=0;
+        varEl.textContent = `${up?'▲':'▼'} ${Math.abs(pct).toFixed(2)}%`;
+        varEl.style.color = up?'var(--green)':'var(--red)';
+        varEl.style.background = up?'rgba(0,200,150,.12)':'rgba(255,92,92,.12)';
+      } else { varEl.textContent=''; }
     }
 
     codeEl.textContent = code;
