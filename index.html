@@ -2757,31 +2757,37 @@ tr+tr td{border-top:1px solid #f3f3f3}
   };
 
   async function loadMoedaChart(code, days){
-    const loadEl  = document.getElementById('moeda-chart-loading');
-    const canvas  = document.getElementById('moeda-chart-canvas');
+    const loadEl = document.getElementById('moeda-chart-loading');
+    const canvas = document.getElementById('moeda-chart-canvas');
     loadEl.style.display = 'flex';
     canvas.style.opacity = '0';
 
     try {
-      const from = daysAgo(days);
-      const res  = await fetch(`https://api.frankfurter.app/${from}..?from=BRL&to=${code}`);
-      const data = await res.json();
-      const dates  = Object.keys(data.rates).sort();
-      // converte: BRL/moeda → moeda/BRL (quanto BRL vale 1 unidade da moeda)
-      const values = dates.map(d => 1 / data.rates[d][code]);
+      // AwesomeAPI histórico diário — cotação real brasileira
+      const res  = await fetch(`https://economia.awesomeapi.com.br/json/daily/${days}/${code}-BRL`);
+      const data = await res.json(); // array de { timestamp, bid, ask, high, low, ... }
 
-      const min = Math.min(...values);
-      const max = Math.max(...values);
-      const avg = values.reduce((a,b)=>a+b,0)/values.length;
+      if(!Array.isArray(data) || !data.length) throw new Error('sem dados');
+
+      // Ordena por timestamp crescente
+      const sorted = [...data].sort((a,b) => Number(a.timestamp) - Number(b.timestamp));
+
+      const values = sorted.map(d => parseFloat(d.bid));
+      const highs  = sorted.map(d => parseFloat(d.high));
+      const lows   = sorted.map(d => parseFloat(d.low));
+
+      const min = Math.min(...lows);
+      const max = Math.max(...highs);
+      const avg = values.reduce((a,b)=>a+b,0) / values.length;
 
       document.getElementById('msheet-min').textContent = `R$ ${fmtVal(min,'BRL')}`;
       document.getElementById('msheet-avg').textContent = `R$ ${fmtVal(avg,'BRL')}`;
       document.getElementById('msheet-max').textContent = `R$ ${fmtVal(max,'BRL')}`;
 
-      // Labels resumidos
-      const labels = dates.map(d => {
-        const [,m,day] = d.split('-');
-        return `${day}/${m}`;
+      // Labels: dia/mês
+      const labels = sorted.map(d => {
+        const dt = new Date(Number(d.timestamp) * 1000);
+        return `${String(dt.getDate()).padStart(2,'0')}/${String(dt.getMonth()+1).padStart(2,'0')}`;
       });
 
       const isUp = values[values.length-1] >= values[0];
