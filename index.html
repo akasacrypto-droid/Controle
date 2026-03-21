@@ -2764,7 +2764,8 @@ tr+tr td{border-top:1px solid #f3f3f3}
 
     try {
       // AwesomeAPI histórico diário — cotação real brasileira
-      const res  = await fetch(`https://economia.awesomeapi.com.br/json/daily/${days}/${code}-BRL`);
+      // Endpoint correto: /json/daily/MOEDA-BRL/DIAS
+      const res  = await fetch(`https://economia.awesomeapi.com.br/json/daily/${code}-BRL/${days}`);
       const data = await res.json(); // array de { timestamp, bid, ask, high, low, ... }
 
       if(!Array.isArray(data) || !data.length) throw new Error('sem dados');
