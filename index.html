@@ -480,6 +480,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
           <span style="font-size:9.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;font-weight:700">De</span>
           <select id="conv-de" onchange="calcConv('de')" style="background:var(--s3);border:1px solid var(--border2);border-radius:7px;color:var(--text);font-size:11px;font-family:'DM Sans',sans-serif;font-weight:700;padding:4px 8px;outline:none;cursor:pointer;-webkit-appearance:none;text-align:center;min-width:100px">
+            <optgroup label="Fiduciário">
             <option value="BRL">🇧🇷 BRL — Real</option>
             <option value="USD">🇺🇸 USD — Dólar</option>
             <option value="EUR">🇪🇺 EUR — Euro</option>
@@ -491,6 +492,17 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
             <option value="CNY">🇨🇳 CNY — Yuan</option>
             <option value="AUD">🇦🇺 AUD — Dólar AU</option>
             <option value="MXN">🇲🇽 MXN — Peso MX</option>
+            </optgroup>
+            <optgroup label="Crypto">
+            <option value="BTC">₿ BTC — Bitcoin</option>
+            <option value="ETH">Ξ ETH — Ethereum</option>
+            <option value="BNB">🟡 BNB — BNB</option>
+            <option value="SOL">◎ SOL — Solana</option>
+            <option value="XRP">✕ XRP — XRP</option>
+            <option value="ADA">🔵 ADA — Cardano</option>
+            <option value="DOGE">🐕 DOGE — Dogecoin</option>
+            <option value="DOT">⚪ DOT — Polkadot</option>
+            </optgroup>
           </select>
         </div>
         <input id="conv-val-de" type="number" inputmode="decimal" value="100" oninput="calcConv('de')" style="width:100%;background:none;border:none;outline:none;font-family:'DM Mono',monospace;font-size:26px;font-weight:600;color:var(--text);padding:0">
@@ -506,6 +518,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
           <span style="font-size:9.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;font-weight:700">Para</span>
           <select id="conv-para" onchange="calcConv('para')" style="background:var(--s3);border:1px solid var(--border2);border-radius:7px;color:var(--text);font-size:11px;font-family:'DM Sans',sans-serif;font-weight:700;padding:4px 8px;outline:none;cursor:pointer;-webkit-appearance:none;text-align:center;min-width:100px">
+            <optgroup label="Fiduciário">
             <option value="BRL">🇧🇷 BRL — Real</option>
             <option value="USD" selected>🇺🇸 USD — Dólar</option>
             <option value="EUR">🇪🇺 EUR — Euro</option>
@@ -517,11 +530,28 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
             <option value="CNY">🇨🇳 CNY — Yuan</option>
             <option value="AUD">🇦🇺 AUD — Dólar AU</option>
             <option value="MXN">🇲🇽 MXN — Peso MX</option>
+            </optgroup>
+            <optgroup label="Crypto">
+            <option value="BTC">₿ BTC — Bitcoin</option>
+            <option value="ETH">Ξ ETH — Ethereum</option>
+            <option value="BNB">🟡 BNB — BNB</option>
+            <option value="SOL">◎ SOL — Solana</option>
+            <option value="XRP">✕ XRP — XRP</option>
+            <option value="ADA">🔵 ADA — Cardano</option>
+            <option value="DOGE">🐕 DOGE — Dogecoin</option>
+            <option value="DOT">⚪ DOT — Polkadot</option>
+            </optgroup>
           </select>
         </div>
         <div id="conv-val-para" style="font-family:'DM Mono',monospace;font-size:26px;font-weight:600;color:var(--blue)">—</div>
         <div id="conv-taxa" style="font-size:10.5px;color:var(--muted);margin-top:4px">—</div>
       </div>
+    </div>
+
+    <!-- Toggle Fiduciário / Crypto -->
+    <div style="display:flex;gap:7px;margin-bottom:10px">
+      <button id="tab-fiat" onclick="setCambioTab('fiat')" style="flex:1;padding:8px;border-radius:10px;border:1px solid rgba(0,200,150,.35);background:var(--green-bg);color:var(--green);font-size:12px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer">🏦 Fiduciário</button>
+      <button id="tab-crypto" onclick="setCambioTab('crypto')" style="flex:1;padding:8px;border-radius:10px;border:1px solid var(--border2);background:none;color:var(--muted);font-size:12px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer">₿ Crypto</button>
     </div>
 
     <!-- Loading -->
@@ -530,10 +560,17 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
       Carregando cotações...
     </div>
 
-    <!-- Grid cotações -->
-    <div id="cambio-grid" style="display:none;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px"></div>
+    <!-- Grid fiduciário -->
+    <div id="cambio-grid" style="display:none;margin-bottom:8px"></div>
 
-    <div style="text-align:center;font-size:10px;color:var(--muted);padding:2px 0 4px;opacity:.6">AwesomeAPI · cotação real · atualiza a cada 60s</div>
+    <!-- Grid crypto -->
+    <div id="crypto-loading" style="display:none;text-align:center;padding:30px;color:var(--muted);font-size:13px">
+      <div style="font-size:28px;margin-bottom:8px;opacity:.4">₿</div>
+      Carregando criptos...
+    </div>
+    <div id="crypto-grid" style="display:none;margin-bottom:8px"></div>
+
+    <div id="cambio-fonte" style="text-align:center;font-size:10px;color:var(--muted);padding:2px 0 4px;opacity:.6">AwesomeAPI · cotação real · atualiza a cada 60s</div>
 
     <!-- ── ALERTAS DE COTAÇÃO ── -->
     <div style="margin-top:14px">
@@ -2575,6 +2612,168 @@ tr+tr td{border-top:1px solid #f3f3f3}
 })();
 </script>
 
+<!-- ── CRYPTO (CoinGecko) ── -->
+<script>
+(function(){
+  const CRYPTOS = [
+    {id:'bitcoin',      code:'BTC', name:'Bitcoin',   ico:'₿',  color:'#F7931A'},
+    {id:'ethereum',     code:'ETH', name:'Ethereum',  ico:'Ξ',  color:'#627EEA'},
+    {id:'binancecoin',  code:'BNB', name:'BNB',       ico:'🟡', color:'#F3BA2F'},
+    {id:'solana',       code:'SOL', name:'Solana',    ico:'◎',  color:'#9945FF'},
+    {id:'ripple',       code:'XRP', name:'XRP',       ico:'✕',  color:'#346AA9'},
+    {id:'cardano',      code:'ADA', name:'Cardano',   ico:'🔵', color:'#0033AD'},
+    {id:'dogecoin',     code:'DOGE',name:'Dogecoin',  ico:'🐕', color:'#C2A633'},
+    {id:'polkadot',     code:'DOT', name:'Polkadot',  ico:'⚪', color:'#E6007A'},
+  ];
+
+  let cryptoRatesInBRL = {}; // code → preço em BRL
+  let cryptoChange24h  = {}; // code → variação %
+  let lastCryptoFetch  = 0;
+  let cryptoLoaded     = false;
+
+  async function fetchCrypto(force){
+    if(!force && cryptoLoaded && Date.now()-lastCryptoFetch < 60000) return;
+    try {
+      const ids = CRYPTOS.map(c=>c.id).join(',');
+      const res = await fetch(`https://api.coingecko.com/api/v3/coins/markets?vs_currency=brl&ids=${ids}&order=market_cap_desc&sparkline=false`);
+      const data = await res.json();
+      data.forEach(c=>{
+        const found = CRYPTOS.find(x=>x.id===c.id);
+        if(found){
+          cryptoRatesInBRL[found.code] = c.current_price;
+          cryptoChange24h[found.code]  = c.price_change_percentage_24h;
+        }
+      });
+      lastCryptoFetch = Date.now();
+      cryptoLoaded = true;
+    } catch(e){}
+  }
+
+  function fmtCrypto(n){
+    if(!n) return '—';
+    if(n >= 10000)  return n.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+    if(n >= 1)      return n.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:4});
+    return n.toLocaleString('pt-BR',{minimumFractionDigits:4,maximumFractionDigits:8});
+  }
+
+  function renderCryptoGrid(){
+    const grid    = document.getElementById('crypto-grid');
+    const loading = document.getElementById('crypto-loading');
+    if(!grid) return;
+    loading.style.display = 'none';
+    grid.style.display = 'block';
+
+    const now = new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+    const lbl = document.getElementById('cambio-update-lbl');
+    if(lbl) lbl.textContent = now;
+    const fonte = document.getElementById('cambio-fonte');
+    if(fonte) fonte.textContent = 'CoinGecko · cotação real · atualiza a cada 60s';
+
+    grid.innerHTML = `<div style="background:var(--s1);border:1px solid var(--border);border-radius:14px;overflow:hidden">` +
+      CRYPTOS.map((c, i)=>{
+        const price = cryptoRatesInBRL[c.code];
+        const pct   = cryptoChange24h[c.code];
+        if(!price) return '';
+        const isLast = i === CRYPTOS.length-1;
+        const up  = pct >= 0;
+        const col = pct === null||pct===undefined ? 'var(--muted)' : up ? 'var(--green)' : 'var(--red)';
+        const bg  = pct === null||pct===undefined ? 'var(--s3)' : up ? 'rgba(0,200,150,.12)' : 'rgba(255,92,92,.12)';
+        const ico = pct === null||pct===undefined ? '' : up ? '▲ ' : '▼ ';
+        const pctTxt = pct === null||pct===undefined ? '—' : `${ico}${Math.abs(pct).toFixed(2)}%`;
+        return `
+        <div onclick="setCryptoConv('${c.code}')"
+             style="display:flex;align-items:center;gap:12px;padding:12px 14px;${isLast?'':'border-bottom:1px solid var(--border)'};cursor:pointer;transition:background .12s"
+             ontouchstart="this.style.background='var(--s2)'" ontouchend="this.style.background=''">
+          <div style="width:40px;height:40px;border-radius:11px;background:${c.color}22;border:1px solid ${c.color}44;display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0;gap:1px">
+            <span style="font-size:16px;line-height:1;color:${c.color};font-weight:700">${c.ico}</span>
+            <span style="font-size:8px;font-weight:700;color:${c.color};letter-spacing:.3px">${c.code}</span>
+          </div>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:13px;font-weight:600;color:var(--text)">${c.name}</div>
+            <div style="font-size:10px;color:var(--muted);margin-top:1px">1 ${c.code} em BRL</div>
+          </div>
+          <div style="text-align:right;flex-shrink:0">
+            <div style="font-family:'DM Mono',monospace;font-size:13px;font-weight:700;color:var(--text)">R$ ${fmtCrypto(price)}</div>
+            <div style="font-size:10px;font-weight:700;color:${col};background:${bg};border-radius:5px;padding:1px 6px;margin-top:3px;display:inline-block">${pctTxt}</div>
+          </div>
+          <div style="color:var(--muted);font-size:11px;opacity:.4;flex-shrink:0">›</div>
+        </div>`;
+      }).join('') + `</div>`;
+
+    // Injeta taxas crypto no conversor global
+    if(window._injectCryptoRates) window._injectCryptoRates(cryptoRatesInBRL);
+  }
+
+  function setCryptoConv(code){
+    const deEl = document.getElementById('conv-de');
+    const paEl = document.getElementById('conv-para');
+    if(deEl) deEl.value = 'BRL';
+    if(paEl) paEl.value = code;
+    if(window.calcConv) calcConv();
+    deEl?.scrollIntoView({behavior:'smooth',block:'center'});
+  }
+  window.setCryptoConv = setCryptoConv;
+
+  // Tab toggle
+  let activeTab = 'fiat';
+  window.setCambioTab = async function(tab){
+    activeTab = tab;
+    const fiatBtn   = document.getElementById('tab-fiat');
+    const cryptoBtn = document.getElementById('tab-crypto');
+    const fiatGrid  = document.getElementById('cambio-grid');
+    const cryptoGrid= document.getElementById('crypto-grid');
+    const cryptoLoad= document.getElementById('crypto-loading');
+    const fiatLoad  = document.getElementById('cambio-loading');
+    const fonte     = document.getElementById('cambio-fonte');
+
+    if(tab === 'fiat'){
+      fiatBtn.style.cssText   = 'flex:1;padding:8px;border-radius:10px;border:1px solid rgba(0,200,150,.35);background:var(--green-bg);color:var(--green);font-size:12px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer';
+      cryptoBtn.style.cssText = 'flex:1;padding:8px;border-radius:10px;border:1px solid var(--border2);background:none;color:var(--muted);font-size:12px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer';
+      cryptoGrid.style.display = 'none';
+      cryptoLoad.style.display = 'none';
+      if(Object.keys(window._ratesInBRL||{}).length > 1){
+        fiatLoad.style.display = 'none';
+        fiatGrid.style.display = 'block';
+      } else {
+        fiatLoad.style.display = 'block';
+        fiatGrid.style.display = 'none';
+        loadCotacoes(false);
+      }
+      if(fonte) fonte.textContent = 'AwesomeAPI · cotação real · atualiza a cada 60s';
+    } else {
+      cryptoBtn.style.cssText = 'flex:1;padding:8px;border-radius:10px;border:1px solid rgba(255,184,77,.35);background:rgba(255,184,77,.12);color:var(--amber);font-size:12px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer';
+      fiatBtn.style.cssText   = 'flex:1;padding:8px;border-radius:10px;border:1px solid var(--border2);background:none;color:var(--muted);font-size:12px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer';
+      fiatGrid.style.display  = 'none';
+      fiatLoad.style.display  = 'none';
+      if(cryptoLoaded){
+        cryptoLoad.style.display = 'none';
+        cryptoGrid.style.display = 'block';
+        renderCryptoGrid();
+      } else {
+        cryptoLoad.style.display = 'block';
+        cryptoGrid.style.display = 'none';
+        await fetchCrypto(true);
+        renderCryptoGrid();
+      }
+    }
+  };
+
+  // Auto-refresh crypto quando aba está aberta
+  setInterval(async()=>{
+    if(document.getElementById('planpage-cambio')?.style.display !== 'none' &&
+       activeTab === 'crypto'){
+      await fetchCrypto(true);
+      renderCryptoGrid();
+    }
+  }, 60000);
+
+  // Expõe para uso externo
+  window._fetchCrypto = fetchCrypto;
+  window._renderCryptoGrid = renderCryptoGrid;
+  window._cryptoRatesInBRL = () => cryptoRatesInBRL;
+})();
+</script>
+
 <!-- ── COTAÇÕES ── -->
 <script>
 (function(){
@@ -2596,9 +2795,22 @@ tr+tr td{border-top:1px solid #f3f3f3}
   let lastFetch   = 0;
   let autoInterval = null;
 
+  // Expõe ratesInBRL para o crypto script poder injetar
+  window._ratesInBRL = ratesInBRL;
+  window._injectCryptoRates = function(cryptoRates){
+    Object.entries(cryptoRates).forEach(([k,v]) => { ratesInBRL[k] = v; });
+  };
+
   // Formata valor
   function fmtVal(n, code){
     if(n === null || n === undefined || isNaN(n)) return '—';
+    // Crypto pode ter valores muito grandes ou muito pequenos
+    const isCrypto = ['BTC','ETH','BNB','SOL','XRP','ADA','DOGE','DOT'].includes(code);
+    if(isCrypto){
+      if(n >= 10000) return n.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+      if(n >= 1)     return n.toLocaleString('pt-BR',{minimumFractionDigits:4,maximumFractionDigits:6});
+      return n.toLocaleString('pt-BR',{minimumFractionDigits:6,maximumFractionDigits:8});
+    }
     const dec = ['JPY','ARS','MXN'].includes(code) ? 2 : 4;
     return n.toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:dec});
   }
