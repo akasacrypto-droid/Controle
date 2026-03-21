@@ -271,9 +271,7 @@ body{background:var(--bg);color:var(--text);display:flex;flex-direction:column;o
 input[type=range]{-webkit-appearance:none;width:100%;height:4px;border-radius:99px;outline:none;cursor:pointer;background:var(--s3);accent-color:var(--green)}
 input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:var(--green);cursor:pointer;box-shadow:0 0 6px rgba(0,200,150,.4)}
 
-/* ── ONLINE PULSE ── */
-@keyframes pulse-green{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.3)}}
-
+@keyframes pulse-green{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.45;transform:scale(1.35)}}
 /* ── RESPONSIVE DESKTOP ── */
 @media(min-width:600px){
   .page{padding:16px 20px calc(var(--sb) + 70px)}
@@ -298,7 +296,10 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
     <span class="logo-txt">Finanças</span>
   </div>
   <div class="topbar-right">
-    <div id="online-badge" title="Usuários online agora" style="display:flex;align-items:center;gap:4px;font-family:'DM Mono',monospace;font-size:10px;color:var(--green);background:var(--green-bg);border:1px solid rgba(0,200,150,.25);border-radius:6px;padding:4px 8px;user-select:none;letter-spacing:.2px;transition:all .4s"><span style="width:6px;height:6px;border-radius:50%;background:var(--green);display:inline-block;animation:pulse-green 2s infinite;flex-shrink:0"></span><span id="online-count">1</span></div>
+    <div id="online-badge" title="Online agora" style="display:flex;align-items:center;gap:5px;font-family:'DM Mono',monospace;font-size:10px;color:var(--green);background:var(--green-bg);border:1px solid rgba(0,200,150,.25);border-radius:6px;padding:4px 8px;user-select:none;flex-shrink:0">
+      <span style="width:6px;height:6px;border-radius:50%;background:var(--green);display:inline-block;animation:pulse-green 2s infinite;flex-shrink:0"></span>
+      <span id="online-count">1</span>
+    </div>
     <div id="version-badge" onclick="showVersionInfo()" title="Versão deployada" style="font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);background:var(--s2);border:1px solid var(--border2);border-radius:6px;padding:4px 8px;cursor:pointer;user-select:none;letter-spacing:.3px;transition:all .2s;display:flex;flex-direction:column;align-items:center;line-height:1.3"><span id="vbadge-hash">4c304cb</span><span id="vbadge-time" style="font-size:9px;color:var(--muted);opacity:.7"></span></div>
     <div class="notif-btn" onclick="goTab('notif')" title="Notificações">
       🔔<div class="notif-badge" id="notif-badge"></div>
@@ -2044,41 +2045,6 @@ setInterval(checkForNewDeploy,5*60*1000);
 setInterval(updateDeployTimeBadge,60*1000);
 </script>
 
-<!-- ── PRESENÇA ONLINE (Firebase) ── -->
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getDatabase, ref, onValue, set, onDisconnect, serverTimestamp, push, remove }
-  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
-
-const firebaseConfig = {
-  apiKey: "AIzaSyDummyKeyReplaceWithYours",
-  authDomain: "financas-presenca.firebaseapp.com",
-  databaseURL: "https://financas-presenca-default-rtdb.firebaseio.com",
-  projectId: "financas-presenca"
-};
-
-(async () => {
-  try {
-    const app = initializeApp(firebaseConfig);
-    const db  = getDatabase(app);
-    const presenceRef = ref(db, 'presence');
-    const myRef = push(presenceRef);
-
-    await set(myRef, { t: serverTimestamp() });
-    onDisconnect(myRef).remove();
-
-    onValue(presenceRef, snap => {
-      const count = snap.exists() ? Object.keys(snap.val()).length : 1;
-      const el = document.getElementById('online-count');
-      if (el) el.textContent = count;
-    });
-  } catch(e) {
-    // Firebase não configurado — mostra 1 (só você)
-    console.warn('Firebase presença não configurado:', e.message);
-  }
-})();
-</script>
-
 <script>
 (function(){
 function normalize(){
@@ -2098,6 +2064,103 @@ window.save=function(){
  normalize();
  if(oldSave) oldSave();
 };
+})();
+</script>
+
+<!-- ── PRESENÇA ONLINE ── -->
+<script>
+(function(){
+  // ID único desta sessão
+  const myId = (localStorage.getItem('_fid') || (()=>{
+    const id = Math.random().toString(36).slice(2)+Date.now().toString(36);
+    localStorage.setItem('_fid', id);
+    return id;
+  })());
+
+  const CHANNEL = 'financas_presence_v2';
+  const TIMEOUT = 12000; // 12s sem heartbeat = saiu
+  const peers = {}; // id -> timestamp
+
+  function setCount(n){
+    const el = document.getElementById('online-count');
+    if(el) el.textContent = n;
+  }
+
+  function countOnline(){
+    const now = Date.now();
+    // limpa peers expirados
+    Object.keys(peers).forEach(id => {
+      if(now - peers[id] > TIMEOUT) delete peers[id];
+    });
+    return Object.keys(peers).length + 1; // +1 = eu
+  }
+
+  // ── BroadcastChannel (mesma aba/origem no mesmo dispositivo) ──
+  let bc;
+  try {
+    bc = new BroadcastChannel(CHANNEL);
+    bc.onmessage = (e) => {
+      const {type, id} = e.data || {};
+      if(!id || id === myId) return;
+      if(type === 'ping' || type === 'join'){
+        peers[id] = Date.now();
+        if(type === 'join') bc.postMessage({type:'ping', id:myId}); // responde
+        setCount(countOnline());
+      } else if(type === 'leave'){
+        delete peers[id];
+        setCount(countOnline());
+      }
+    };
+  } catch(e){}
+
+  // ── WebSocket público sem auth (demo.piesocket.com) ──
+  let ws, wsReady = false;
+  function wsConnect(){
+    try {
+      // Usando canal público do piesocket — chave demo pública oficial
+      ws = new WebSocket('wss://demo.piesocket.com/v3/'+CHANNEL+'?api_key=oCdCMcMPQplfbe6LVMtI&notify_self=0');
+      ws.onopen = () => {
+        wsReady = true;
+        wsSend({type:'join', id:myId});
+      };
+      ws.onmessage = (e) => {
+        try {
+          const msg = JSON.parse(e.data);
+          const {type, id} = msg;
+          if(!id || id === myId) return;
+          if(type === 'ping' || type === 'join'){
+            peers[id] = Date.now();
+            if(type === 'join') wsSend({type:'ping', id:myId});
+            setCount(countOnline());
+          } else if(type === 'leave'){
+            delete peers[id];
+            setCount(countOnline());
+          }
+        } catch(e){}
+      };
+      ws.onclose = () => { wsReady = false; setTimeout(wsConnect, 4000); };
+      ws.onerror = () => { wsReady = false; };
+    } catch(e){}
+  }
+  function wsSend(obj){
+    if(ws && wsReady) try{ ws.send(JSON.stringify(obj)); }catch(e){}
+  }
+  wsConnect();
+
+  // Heartbeat a cada 5s
+  setInterval(() => {
+    if(bc) bc.postMessage({type:'ping', id:myId});
+    wsSend({type:'ping', id:myId});
+    setCount(countOnline());
+  }, 5000);
+
+  // Avisar ao sair
+  window.addEventListener('beforeunload', () => {
+    if(bc) bc.postMessage({type:'leave', id:myId});
+    wsSend({type:'leave', id:myId});
+  });
+
+  setCount(1);
 })();
 </script>
 
