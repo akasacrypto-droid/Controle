@@ -271,6 +271,9 @@ body{background:var(--bg);color:var(--text);display:flex;flex-direction:column;o
 input[type=range]{-webkit-appearance:none;width:100%;height:4px;border-radius:99px;outline:none;cursor:pointer;background:var(--s3);accent-color:var(--green)}
 input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:var(--green);cursor:pointer;box-shadow:0 0 6px rgba(0,200,150,.4)}
 
+/* ── ONLINE PULSE ── */
+@keyframes pulse-green{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.3)}}
+
 /* ── RESPONSIVE DESKTOP ── */
 @media(min-width:600px){
   .page{padding:16px 20px calc(var(--sb) + 70px)}
@@ -295,6 +298,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
     <span class="logo-txt">Finanças</span>
   </div>
   <div class="topbar-right">
+    <div id="online-badge" title="Usuários online agora" style="display:flex;align-items:center;gap:4px;font-family:'DM Mono',monospace;font-size:10px;color:var(--green);background:var(--green-bg);border:1px solid rgba(0,200,150,.25);border-radius:6px;padding:4px 8px;user-select:none;letter-spacing:.2px;transition:all .4s"><span style="width:6px;height:6px;border-radius:50%;background:var(--green);display:inline-block;animation:pulse-green 2s infinite;flex-shrink:0"></span><span id="online-count">1</span></div>
     <div id="version-badge" onclick="showVersionInfo()" title="Versão deployada" style="font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);background:var(--s2);border:1px solid var(--border2);border-radius:6px;padding:4px 8px;cursor:pointer;user-select:none;letter-spacing:.3px;transition:all .2s;display:flex;flex-direction:column;align-items:center;line-height:1.3"><span id="vbadge-hash">4c304cb</span><span id="vbadge-time" style="font-size:9px;color:var(--muted);opacity:.7"></span></div>
     <div class="notif-btn" onclick="goTab('notif')" title="Notificações">
       🔔<div class="notif-badge" id="notif-badge"></div>
@@ -2038,6 +2042,41 @@ updateDeployTimeBadge();
 checkForNewDeploy();
 setInterval(checkForNewDeploy,5*60*1000);
 setInterval(updateDeployTimeBadge,60*1000);
+</script>
+
+<!-- ── PRESENÇA ONLINE (Firebase) ── -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getDatabase, ref, onValue, set, onDisconnect, serverTimestamp, push, remove }
+  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDummyKeyReplaceWithYours",
+  authDomain: "financas-presenca.firebaseapp.com",
+  databaseURL: "https://financas-presenca-default-rtdb.firebaseio.com",
+  projectId: "financas-presenca"
+};
+
+(async () => {
+  try {
+    const app = initializeApp(firebaseConfig);
+    const db  = getDatabase(app);
+    const presenceRef = ref(db, 'presence');
+    const myRef = push(presenceRef);
+
+    await set(myRef, { t: serverTimestamp() });
+    onDisconnect(myRef).remove();
+
+    onValue(presenceRef, snap => {
+      const count = snap.exists() ? Object.keys(snap.val()).length : 1;
+      const el = document.getElementById('online-count');
+      if (el) el.textContent = count;
+    });
+  } catch(e) {
+    // Firebase não configurado — mostra 1 (só você)
+    console.warn('Firebase presença não configurado:', e.message);
+  }
+})();
 </script>
 
 <script>
