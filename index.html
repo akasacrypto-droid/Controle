@@ -2277,19 +2277,194 @@ window.save=function(){
 <!-- ── PDF EXPORT ── -->
 <script>
 window.exportPDF = function(){
-  // Preenche header com info do período
-  const titleEl = document.getElementById('rep-title');
-  const sub = document.getElementById('pdf-header-sub');
-  if(sub && titleEl) sub.textContent = titleEl.textContent + ' · Gerado em ' + new Date().toLocaleDateString('pt-BR',{day:'2-digit',month:'long',year:'numeric'});
+  // Coleta dados do relatório atual
+  const titleEl  = document.getElementById('rep-title');
+  const expEl    = document.getElementById('rep-total-exp');
+  const incEl    = document.getElementById('rep-total-inc');
+  const balEl    = document.getElementById('rep-total-bal');
+  const rankEl   = document.getElementById('rep-ranking');
+  const topEl    = document.getElementById('rep-top-tx');
+  const trendEl  = document.getElementById('rep-trend');
 
-  // Força tab relatório visível
-  ['page-report','page-txs','page-plan','page-cfg'].forEach(id=>{
-    const el=document.getElementById(id);
-    if(el) el.classList.remove('on');
+  const titulo = titleEl?.textContent||'Relatório';
+  const gastos = expEl?.textContent||'R$0';
+  const receita= incEl?.textContent||'R$0';
+  const saldo  = balEl?.textContent||'R$0';
+  const saldoCol = (balEl?.style?.color||'').includes('red') ? '#FF5C5C' : '#5B9EFF';
+  const dataGer= new Date().toLocaleDateString('pt-BR',{day:'2-digit',month:'long',year:'numeric'});
+
+  // Ranking HTML limpo (extrai texto dos nós)
+  function cleanHTML(el){
+    if(!el) return '';
+    // clona e remove elementos desnecessários para impressão
+    const clone = el.cloneNode(true);
+    clone.querySelectorAll('canvas').forEach(c=>c.remove());
+    return clone.innerHTML;
+  }
+
+  // Pega os itens de ranking como texto estruturado
+  const rankItems = [];
+  rankEl?.querySelectorAll('[style*="display:flex"]').forEach(row=>{
+    const spans = row.querySelectorAll('span');
+    const vals  = row.querySelectorAll('[style*="mono"]');
+    if(spans.length && vals.length){
+      const cat = spans[0]?.textContent?.trim()||'';
+      const val = vals[0]?.textContent?.trim()||'';
+      const pct = row.querySelector('[style*="color:var(--muted)"]')?.textContent?.trim()||'';
+      const barFill = row.querySelector('[style*="transition:width"]');
+      const w = barFill ? (barFill.style.width||'0%') : '0%';
+      const color = barFill ? (barFill.style.background||'#5B9EFF') : '#5B9EFF';
+      if(cat) rankItems.push({cat,val,pct,w,color});
+    }
   });
-  document.getElementById('page-report').classList.add('on');
 
-  setTimeout(()=>{ window.print(); }, 150);
+  const topItems = [];
+  topEl?.querySelectorAll('[style*="display:flex"]').forEach(row=>{
+    const desc = row.querySelector('[style*="font-weight:600"]')?.textContent?.trim()||'';
+    const meta = row.querySelector('[style*="color:var(--muted)"]')?.textContent?.trim()||'';
+    const amt  = row.querySelector('[style*="color:var(--red)"]')?.textContent?.trim()||'';
+    const ico  = row.querySelector('[style*="font-size:14px"]')?.textContent?.trim()||'💸';
+    if(desc && amt) topItems.push({desc,meta,amt,ico});
+  });
+
+  const trendItems = [];
+  trendEl?.querySelectorAll('[style*="display:flex"]').forEach(row=>{
+    const spans = row.querySelectorAll('span,div');
+    const texts = [...spans].map(s=>s.textContent.trim()).filter(Boolean);
+    if(texts.length >= 2) trendItems.push(texts);
+  });
+
+  const rankHTML = rankItems.slice(0,8).map((r,i)=>`
+    <tr>
+      <td style="padding:5px 8px;font-size:10px;color:#888;font-weight:700;width:28px">#${i+1}</td>
+      <td style="padding:5px 8px;font-size:11px;font-weight:600">${r.cat}</td>
+      <td style="padding:5px 8px">
+        <div style="height:5px;background:#eee;border-radius:3px;overflow:hidden;width:100%">
+          <div style="height:5px;background:${r.color};width:${r.w};border-radius:3px"></div>
+        </div>
+        <div style="font-size:9px;color:#aaa;margin-top:2px">${r.pct}</div>
+      </td>
+      <td style="padding:5px 8px;font-family:monospace;font-size:11px;font-weight:700;color:${r.color};text-align:right;white-space:nowrap">${r.val}</td>
+    </tr>`).join('');
+
+  const topHTML = topItems.slice(0,6).map(t=>`
+    <tr>
+      <td style="padding:5px 8px;font-size:14px;width:28px">${t.ico}</td>
+      <td style="padding:5px 8px">
+        <div style="font-size:11px;font-weight:600">${t.desc}</div>
+        <div style="font-size:9px;color:#aaa">${t.meta}</div>
+      </td>
+      <td style="padding:5px 8px;font-family:monospace;font-size:11px;font-weight:700;color:#FF5C5C;text-align:right;white-space:nowrap">${t.amt}</td>
+    </tr>`).join('');
+
+  const win = window.open('','_blank','width=900,height=700');
+  win.document.write(`<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<title>Finanças — ${titulo}</title>
+<style>
+  @page { size: A4; margin: 12mm 14mm; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:'Segoe UI',Arial,sans-serif; font-size:11px; color:#111; background:#fff; }
+
+  /* HEADER */
+  .pdf-header { display:flex; align-items:center; justify-content:space-between; border-bottom:2px solid #00C896; padding-bottom:8px; margin-bottom:12px; }
+  .pdf-logo { display:flex; align-items:center; gap:8px; }
+  .pdf-logo-ico { width:30px; height:30px; background:linear-gradient(135deg,#00C896,#009E76); border-radius:7px; display:flex; align-items:center; justify-content:center; font-size:16px; }
+  .pdf-logo-txt { font-size:17px; font-weight:700; color:#111; }
+  .pdf-meta { text-align:right; font-size:9px; color:#888; line-height:1.6; }
+
+  /* HERO STATS */
+  .stats-row { display:flex; gap:8px; margin-bottom:12px; }
+  .stat-box { flex:1; border-radius:8px; padding:10px 12px; text-align:center; }
+  .stat-box.gasto  { background:#fff0f0; border:1px solid #ffdddd; }
+  .stat-box.receita{ background:#f0fff8; border:1px solid #c8f5e4; }
+  .stat-box.saldo  { background:#f0f6ff; border:1px solid #d0e4ff; }
+  .stat-val { font-family:monospace; font-size:16px; font-weight:700; }
+  .stat-lbl { font-size:8px; color:#888; text-transform:uppercase; letter-spacing:.5px; margin-top:3px; }
+
+  /* GRID 2 COLUNAS */
+  .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px; }
+  .section { border:1px solid #eee; border-radius:8px; overflow:hidden; }
+  .section-title { background:#f8f8f8; padding:7px 10px; font-size:10px; font-weight:700; color:#555; text-transform:uppercase; letter-spacing:.5px; border-bottom:1px solid #eee; }
+
+  table { width:100%; border-collapse:collapse; }
+  td { vertical-align:middle; }
+  tr:last-child td { border-bottom:none; }
+  tr + tr td { border-top:1px solid #f0f0f0; }
+
+  /* TENDÊNCIA */
+  .trend-row { display:flex; align-items:center; justify-content:space-between; padding:5px 10px; border-bottom:1px solid #f0f0f0; font-size:10px; }
+  .trend-row:last-child { border-bottom:none; }
+  .trend-pos { color:#00C896; font-weight:700; font-family:monospace; }
+  .trend-neg { color:#FF5C5C; font-weight:700; font-family:monospace; }
+
+  /* RODAPÉ */
+  .pdf-footer { margin-top:10px; padding-top:8px; border-top:1px solid #eee; display:flex; justify-content:space-between; font-size:8px; color:#bbb; }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="pdf-header">
+  <div class="pdf-logo">
+    <div class="pdf-logo-ico">💰</div>
+    <div>
+      <div class="pdf-logo-txt">Finanças</div>
+      <div style="font-size:10px;color:#888">${titulo}</div>
+    </div>
+  </div>
+  <div class="pdf-meta">
+    Gerado em ${dataGer}<br>
+    akasacrypto-droid.github.io/financeiro
+  </div>
+</div>
+
+<!-- STATS -->
+<div class="stats-row">
+  <div class="stat-box gasto">
+    <div class="stat-val" style="color:#FF5C5C">${gastos}</div>
+    <div class="stat-lbl">💸 Gasto total</div>
+  </div>
+  <div class="stat-box receita">
+    <div class="stat-val" style="color:#00C896">${receita}</div>
+    <div class="stat-lbl">💰 Receita</div>
+  </div>
+  <div class="stat-box saldo">
+    <div class="stat-val" style="color:${saldoCol}">${saldo}</div>
+    <div class="stat-lbl">⚖️ Saldo</div>
+  </div>
+</div>
+
+<!-- GRID 2 COLUNAS -->
+<div class="grid2">
+
+  <!-- Ranking categorias -->
+  <div class="section">
+    <div class="section-title">🏆 Ranking de gastos</div>
+    <table>${rankHTML || '<tr><td style="padding:12px;color:#aaa;text-align:center">Sem dados</td></tr>'}</table>
+  </div>
+
+  <!-- Top lançamentos -->
+  <div class="section">
+    <div class="section-title">💸 Maiores gastos</div>
+    <table>${topHTML || '<tr><td style="padding:12px;color:#aaa;text-align:center">Sem dados</td></tr>'}</table>
+  </div>
+
+</div>
+
+<!-- RODAPÉ -->
+<div class="pdf-footer">
+  <span>Finanças App · Dados pessoais</span>
+  <span>Gerado automaticamente · ${new Date().toLocaleString('pt-BR')}</span>
+</div>
+
+<script>
+  window.onload = function(){ window.print(); };
+<\/script>
+</body></html>`);
+  win.document.close();
 };
 </script>
 
