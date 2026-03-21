@@ -98,7 +98,7 @@ body{background:var(--bg);color:var(--text);display:flex;flex-direction:column;o
 .comp-ico{font-size:17px;flex-shrink:0}
 .comp-txt b{font-weight:600}
 
-/* ── METRICSS ── */
+/* ── METRICS ── */
 .metrics{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
 .mc{background:var(--s1);border:1px solid var(--border);border-radius:13px;padding:12px;position:relative;overflow:hidden}
 .mc::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;border-radius:13px 13px 0 0}
@@ -441,34 +441,59 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
   <!-- ── SUB: CÂMBIO ── -->
   <div id="planpage-cambio" style="display:none">
 
-    <!-- Header atualização -->
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-      <div class="slbl" style="margin:0">Base: Real Brasileiro (BRL)</div>
-      <button id="cambio-refresh-btn" onclick="loadCotacoes(true)" style="font-size:11px;padding:5px 12px;border-radius:99px;border:1px solid var(--border2);background:var(--s2);color:var(--muted2);font-family:'DM Sans',sans-serif;cursor:pointer;font-weight:700;display:flex;align-items:center;gap:4px">🔄 <span id="cambio-update-lbl">Atualizar</span></button>
-    </div>
+    <!-- Conversor bidirecional -->
+    <div style="background:linear-gradient(135deg,#151e38,#0f1628);border:1px solid rgba(91,158,255,.18);border-radius:18px;padding:16px;margin-bottom:12px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+        <span style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;font-weight:700">💱 Conversor</span>
+        <button onclick="loadCotacoes(true)" style="font-size:10px;padding:4px 10px;border-radius:99px;border:1px solid var(--border2);background:var(--s2);color:var(--muted2);font-family:'DM Sans',sans-serif;cursor:pointer;font-weight:700;display:flex;align-items:center;gap:4px">🔄 <span id="cambio-update-lbl">atualizar</span></button>
+      </div>
 
-    <!-- Conversor rápido -->
-    <div style="background:linear-gradient(135deg,#1a2040,#12192e);border:1px solid rgba(91,158,255,.15);border-radius:16px;padding:14px 16px;margin-bottom:12px">
-      <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px;font-weight:600">Conversor rápido</div>
-      <div style="display:flex;align-items:center;gap:8px">
-        <div style="flex:1;background:var(--s2);border:1px solid var(--border2);border-radius:10px;padding:10px 12px">
-          <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">BRL</div>
-          <input id="conv-brl" type="number" inputmode="decimal" value="100" oninput="convertMoeda()" style="width:100%;background:none;border:none;outline:none;font-family:'DM Mono',monospace;font-size:18px;font-weight:600;color:var(--text)">
+      <!-- Campo DE -->
+      <div style="background:var(--s2);border:1px solid var(--border2);border-radius:12px;padding:12px 14px;margin-bottom:8px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+          <span style="font-size:9.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;font-weight:700">De</span>
+          <select id="conv-de" onchange="calcConv('de')" style="background:var(--s3);border:1px solid var(--border2);border-radius:7px;color:var(--text);font-size:11px;font-family:'DM Sans',sans-serif;font-weight:700;padding:4px 8px;outline:none;cursor:pointer;-webkit-appearance:none;text-align:center;min-width:100px">
+            <option value="BRL">🇧🇷 BRL — Real</option>
+            <option value="USD">🇺🇸 USD — Dólar</option>
+            <option value="EUR">🇪🇺 EUR — Euro</option>
+            <option value="GBP">🇬🇧 GBP — Libra</option>
+            <option value="ARS">🇦🇷 ARS — Peso Arg</option>
+            <option value="JPY">🇯🇵 JPY — Iene</option>
+            <option value="CAD">🇨🇦 CAD — Dólar CA</option>
+            <option value="CHF">🇨🇭 CHF — Franco</option>
+            <option value="CNY">🇨🇳 CNY — Yuan</option>
+            <option value="AUD">🇦🇺 AUD — Dólar AU</option>
+            <option value="MXN">🇲🇽 MXN — Peso MX</option>
+          </select>
         </div>
-        <div style="color:var(--muted);font-size:18px;flex-shrink:0">⇄</div>
-        <div style="flex:1;background:var(--s2);border:1px solid var(--border2);border-radius:10px;padding:10px 12px">
-          <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">
-            <select id="conv-moeda" onchange="convertMoeda()" style="background:none;border:none;outline:none;font-size:9px;font-family:'DM Sans',sans-serif;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;font-weight:700;-webkit-appearance:none;cursor:pointer">
-              <option value="USD">USD 🇺🇸</option>
-              <option value="EUR">EUR 🇪🇺</option>
-              <option value="GBP">GBP 🇬🇧</option>
-              <option value="ARS">ARS 🇦🇷</option>
-              <option value="JPY">JPY 🇯🇵</option>
-              <option value="BTC">BTC ₿</option>
-            </select>
-          </div>
-          <div id="conv-result" style="font-family:'DM Mono',monospace;font-size:18px;font-weight:600;color:var(--blue)">—</div>
+        <input id="conv-val-de" type="number" inputmode="decimal" value="100" oninput="calcConv('de')" style="width:100%;background:none;border:none;outline:none;font-family:'DM Mono',monospace;font-size:26px;font-weight:600;color:var(--text);padding:0">
+      </div>
+
+      <!-- Botão trocar -->
+      <div style="display:flex;justify-content:center;margin-bottom:8px">
+        <button onclick="swapConv()" style="width:36px;height:36px;border-radius:50%;background:var(--s3);border:1px solid var(--border2);color:var(--muted2);font-size:16px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:transform .2s" onactive="this.style.transform='rotate(180deg)'">⇅</button>
+      </div>
+
+      <!-- Campo PARA -->
+      <div style="background:var(--s2);border:1px solid rgba(91,158,255,.2);border-radius:12px;padding:12px 14px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+          <span style="font-size:9.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;font-weight:700">Para</span>
+          <select id="conv-para" onchange="calcConv('para')" style="background:var(--s3);border:1px solid var(--border2);border-radius:7px;color:var(--text);font-size:11px;font-family:'DM Sans',sans-serif;font-weight:700;padding:4px 8px;outline:none;cursor:pointer;-webkit-appearance:none;text-align:center;min-width:100px">
+            <option value="BRL">🇧🇷 BRL — Real</option>
+            <option value="USD" selected>🇺🇸 USD — Dólar</option>
+            <option value="EUR">🇪🇺 EUR — Euro</option>
+            <option value="GBP">🇬🇧 GBP — Libra</option>
+            <option value="ARS">🇦🇷 ARS — Peso Arg</option>
+            <option value="JPY">🇯🇵 JPY — Iene</option>
+            <option value="CAD">🇨🇦 CAD — Dólar CA</option>
+            <option value="CHF">🇨🇭 CHF — Franco</option>
+            <option value="CNY">🇨🇳 CNY — Yuan</option>
+            <option value="AUD">🇦🇺 AUD — Dólar AU</option>
+            <option value="MXN">🇲🇽 MXN — Peso MX</option>
+          </select>
         </div>
+        <div id="conv-val-para" style="font-family:'DM Mono',monospace;font-size:26px;font-weight:600;color:var(--blue)">—</div>
+        <div id="conv-taxa" style="font-size:10.5px;color:var(--muted);margin-top:4px">—</div>
       </div>
     </div>
 
@@ -478,11 +503,10 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
       Carregando cotações...
     </div>
 
-    <!-- Grid moedas -->
-    <div id="cambio-grid" style="display:none;display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px"></div>
+    <!-- Grid cotações -->
+    <div id="cambio-grid" style="display:none;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px"></div>
 
-    <!-- Rodapé -->
-    <div style="text-align:center;font-size:10px;color:var(--muted);padding:4px 0 2px;opacity:.7">Fonte: frankfurter.app · Atualização automática a cada 60s</div>
+    <div style="text-align:center;font-size:10px;color:var(--muted);padding:2px 0 4px;opacity:.6">frankfurter.app · atualiza a cada 60s</div>
 
   </div>
 
@@ -2121,97 +2145,134 @@ window.save=function(){
 <script>
 (function(){
   const MOEDAS = [
-    {code:'USD', flag:'🇺🇸', name:'Dólar'},
+    {code:'BRL', flag:'🇧🇷', name:'Real'},
+    {code:'USD', flag:'🇺🇸', name:'Dólar EUA'},
     {code:'EUR', flag:'🇪🇺', name:'Euro'},
     {code:'GBP', flag:'🇬🇧', name:'Libra'},
-    {code:'ARS', flag:'🇦🇷', name:'Peso Arg.'},
+    {code:'ARS', flag:'🇦🇷', name:'Peso Arg'},
     {code:'JPY', flag:'🇯🇵', name:'Iene'},
     {code:'CAD', flag:'🇨🇦', name:'Dólar CA'},
-    {code:'CHF', flag:'🇨🇭', name:'Franco'},
+    {code:'CHF', flag:'🇨🇭', name:'Franco CH'},
     {code:'CNY', flag:'🇨🇳', name:'Yuan'},
     {code:'AUD', flag:'🇦🇺', name:'Dólar AU'},
     {code:'MXN', flag:'🇲🇽', name:'Peso MX'},
   ];
 
-  let ratesCache = null; // BRL por 1 unidade da moeda estrangeira (i.e. quanto BRL vale 1 USD)
+  // ratesInBRL[code] = quanto BRL vale 1 unidade de `code`
+  // ratesInBRL['BRL'] = 1
+  let ratesInBRL = { BRL: 1 };
   let lastFetch = 0;
   let autoInterval = null;
 
-  // frankfurter.app: base=USD retorna rates[BRL] etc
-  // Para BRL base: usamos /latest?from=BRL
   async function fetchRates(force){
-    if(!force && ratesCache && Date.now()-lastFetch < 55000) return ratesCache;
+    if(!force && Object.keys(ratesInBRL).length > 1 && Date.now()-lastFetch < 55000) return;
     try {
-      // Busca 1 BRL = X moedas => invertemos para saber X moedas = Y BRL
-      const symbols = MOEDAS.map(m=>m.code).join(',');
+      const symbols = MOEDAS.filter(m=>m.code!=='BRL').map(m=>m.code).join(',');
       const res = await fetch(`https://api.frankfurter.app/latest?from=BRL&to=${symbols}`);
       const data = await res.json();
-      // data.rates[USD] = quanto USD vale 1 BRL → invertemos: 1 USD = 1/data.rates[USD] BRL
-      const inverted = {};
-      Object.entries(data.rates).forEach(([k,v])=>{ inverted[k] = 1/v; });
-      ratesCache = inverted;
+      // data.rates[USD] = quanto USD vale 1 BRL → inverte: 1 USD = 1/rate BRL
+      ratesInBRL = { BRL: 1 };
+      Object.entries(data.rates).forEach(([k,v]) => { ratesInBRL[k] = 1/v; });
       lastFetch = Date.now();
-      return ratesCache;
-    } catch(e){ return ratesCache; }
+    } catch(e){}
   }
 
-  function fmt(n, code){
-    if(code==='JPY') return n.toFixed(2);
-    if(code==='ARS') return n.toFixed(2);
-    return n.toFixed(4);
+  function fmtVal(n, code){
+    if(n === null || isNaN(n)) return '—';
+    const decimals = ['JPY','ARS','MXN'].includes(code) ? 2 : 4;
+    return n.toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:decimals});
   }
 
-  function renderGrid(rates){
-    const grid = document.getElementById('cambio-grid');
+  // Converte `amount` de `fromCode` para `toCode`
+  function convert(amount, fromCode, toCode){
+    if(!ratesInBRL[fromCode] || !ratesInBRL[toCode]) return null;
+    const inBRL = amount * ratesInBRL[fromCode];
+    return inBRL / ratesInBRL[toCode];
+  }
+
+  window.calcConv = function(changed){
+    const de   = document.getElementById('conv-de').value;
+    const para = document.getElementById('conv-para').value;
+    const valDeEl   = document.getElementById('conv-val-de');
+    const valParaEl = document.getElementById('conv-val-para');
+    const taxaEl    = document.getElementById('conv-taxa');
+
+    const amount = parseFloat(valDeEl.value) || 0;
+    const result = convert(amount, de, para);
+    valParaEl.textContent = fmtVal(result, para);
+
+    // Taxa de câmbio unitária
+    const taxa1 = convert(1, de, para);
+    if(taxa1 !== null){
+      taxaEl.textContent = `1 ${de} = ${fmtVal(taxa1, para)} ${para}`;
+    }
+  };
+
+  window.swapConv = function(){
+    const deEl   = document.getElementById('conv-de');
+    const paraEl = document.getElementById('conv-para');
+    const valDeEl = document.getElementById('conv-val-de');
+    const valParaEl = document.getElementById('conv-val-para');
+
+    const tmpCode = deEl.value;
+    deEl.value = paraEl.value;
+    paraEl.value = tmpCode;
+
+    // Pega o valor resultado atual e joga no campo de
+    const resultTxt = valParaEl.textContent.replace(/\./g,'').replace(',','.');
+    const num = parseFloat(resultTxt);
+    if(!isNaN(num)) valDeEl.value = num;
+
+    calcConv('de');
+  };
+
+  function renderGrid(){
+    const grid    = document.getElementById('cambio-grid');
     const loading = document.getElementById('cambio-loading');
-    if(!rates || !grid) return;
+    if(!grid) return;
+
     loading.style.display = 'none';
     grid.style.display = 'grid';
 
     const now = new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
-    document.getElementById('cambio-update-lbl').textContent = now;
+    const lbl = document.getElementById('cambio-update-lbl');
+    if(lbl) lbl.textContent = now;
 
-    grid.innerHTML = MOEDAS.map(m => {
-      const rate = rates[m.code];
+    const lista = MOEDAS.filter(m => m.code !== 'BRL');
+    grid.innerHTML = lista.map(m => {
+      const rate = ratesInBRL[m.code]; // 1 m.code = rate BRL
       if(!rate) return '';
-      const brl = rate.toFixed(m.code==='JPY'||m.code==='ARS'?4:4);
-      return `<div style="background:var(--s1);border:1px solid var(--border);border-radius:13px;padding:12px 13px;position:relative;overflow:hidden">
-        <div style="position:absolute;top:0;left:0;right:0;height:2px;background:var(--blue);border-radius:13px 13px 0 0;opacity:.5"></div>
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-          <span style="font-size:18px">${m.flag}</span>
-          <span style="font-size:9.5px;font-weight:700;color:var(--muted);background:var(--s3);border-radius:4px;padding:2px 6px">${m.code}</span>
+      const brl = fmtVal(rate, 'BRL');
+      const inv = fmtVal(1/rate, m.code); // 1 BRL = ? moeda
+      return `
+      <div onclick="document.getElementById('conv-de').value='BRL';document.getElementById('conv-para').value='${m.code}';calcConv('de')"
+           style="background:var(--s1);border:1px solid var(--border);border-radius:13px;padding:11px 12px;position:relative;overflow:hidden;cursor:pointer;active:background:var(--s2)">
+        <div style="position:absolute;top:0;left:0;right:0;height:2px;background:var(--blue);opacity:.4;border-radius:13px 13px 0 0"></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px">
+          <span style="font-size:17px">${m.flag}</span>
+          <span style="font-size:9px;font-weight:700;color:var(--muted);background:var(--s3);border-radius:4px;padding:2px 5px">${m.code}</span>
         </div>
-        <div style="font-size:10px;color:var(--muted);margin-bottom:3px">${m.name}</div>
-        <div style="font-family:'DM Mono',monospace;font-size:15px;font-weight:600;color:var(--text)">R$ ${Number(brl).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:4})}</div>
-        <div style="font-size:9.5px;color:var(--muted);margin-top:2px">por 1 ${m.code}</div>
+        <div style="font-size:9.5px;color:var(--muted);margin-bottom:3px">${m.name}</div>
+        <div style="font-family:'DM Mono',monospace;font-size:14px;font-weight:700;color:var(--text)">R$ ${brl}</div>
+        <div style="font-size:9px;color:var(--muted);margin-top:2px">1 BRL = ${inv} ${m.code}</div>
       </div>`;
     }).join('');
 
-    convertMoeda();
+    calcConv('de');
   }
 
   window.loadCotacoes = async function(force){
     const lbl = document.getElementById('cambio-update-lbl');
     if(lbl && force) lbl.textContent = '...';
-    const rates = await fetchRates(force);
-    renderGrid(rates);
-    // auto-refresh a cada 60s enquanto aba está aberta
+    await fetchRates(force);
+    renderGrid();
     if(!autoInterval){
       autoInterval = setInterval(()=>{
-        if(document.getElementById('planpage-cambio').style.display!=='none'){
+        if(document.getElementById('planpage-cambio')?.style.display !== 'none'){
           loadCotacoes(true);
         }
       }, 60000);
     }
-  };
-
-  window.convertMoeda = function(){
-    const brlInput = parseFloat(document.getElementById('conv-brl').value) || 0;
-    const moeda = document.getElementById('conv-moeda').value;
-    const result = document.getElementById('conv-result');
-    if(!ratesCache || !ratesCache[moeda]){ result.textContent='—'; return; }
-    const converted = brlInput / ratesCache[moeda];
-    result.textContent = converted.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:moeda==='JPY'?0:4});
   };
 })();
 </script>
