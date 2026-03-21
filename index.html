@@ -2216,55 +2216,95 @@ window.save=function(){
 })();
 </script>
 
-<!-- ── PRESENÇA ONLINE (PubNub) ── -->
-<script src="https://cdn.pubnub.com/sdk/javascript/pubnub.7.4.5.min.js"></script>
+<!-- ── PRESENÇA ONLINE (MQTT HiveMQ) ── -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mqtt/5.3.4/mqtt.min.js"></script>
 <script>
 (function(){
-  const myUUID = (localStorage.getItem('_fin_uuid') || (()=>{
-    const id = 'u-'+Math.random().toString(36).slice(2)+Date.now().toString(36);
-    localStorage.setItem('_fin_uuid', id);
+  const myId = sessionStorage.getItem('_sid') || (()=>{
+    const id = 'f'+Math.random().toString(36).slice(2,10);
+    sessionStorage.setItem('_sid', id);
     return id;
-  })());
+  })();
+
+  // Canal único pro seu app — mude esse nome se quiser isolar
+  const TOPIC = 'financas-app-akasa-presenca/v1';
+  const TIMEOUT = 18000; // 18s sem heartbeat = saiu
+  const peers = {};
 
   function setCount(n){
     const el = document.getElementById('online-count');
     if(el) el.textContent = Math.max(1, n);
   }
 
-  const pubnub = new PubNub({
-    publishKey:   'demo',
-    subscribeKey: 'demo',
-    uuid: myUUID,
-    heartbeatInterval: 10,
-  });
+  function countOnline(){
+    const now = Date.now();
+    Object.keys(peers).forEach(id => { if(now - peers[id] > TIMEOUT) delete peers[id]; });
+    return Object.keys(peers).length + 1; // +1 = eu mesmo
+  }
 
-  const CHANNEL = 'financas-presenca-v3';
+  // BroadcastChannel — mesma máquina, abas diferentes
+  let bc;
+  try {
+    bc = new BroadcastChannel('fin_presenca_v4');
+    bc.onmessage = e => {
+      const {type, id} = e.data || {};
+      if(!id || id === myId) return;
+      if(type==='join'){ peers[id]=Date.now(); bc.postMessage({type:'pong',id:myId}); }
+      else if(type==='ping'||type==='pong'){ peers[id]=Date.now(); }
+      else if(type==='leave'){ delete peers[id]; }
+      setCount(countOnline());
+    };
+    bc.postMessage({type:'join', id:myId});
+  } catch(e){}
 
-  // Ouve eventos de presença
-  pubnub.addListener({
-    presence: (event) => {
-      // hereNow retorna occupancy direto
-      pubnub.hereNow({ channels: [CHANNEL] }, (status, resp) => {
-        if(!status.error && resp.totalOccupancy !== undefined){
-          setCount(resp.totalOccupancy);
-        }
-      });
-    }
-  });
-
-  pubnub.subscribe({ channels: [CHANNEL], withPresence: true });
-
-  // Busca inicial
-  setTimeout(()=>{
-    pubnub.hereNow({ channels: [CHANNEL] }, (status, resp) => {
-      if(!status.error) setCount(resp.totalOccupancy);
+  // MQTT via HiveMQ broker público (sem cadastro, sem chave)
+  let client;
+  try {
+    client = mqtt.connect('wss://broker.hivemq.com:8884/mqtt', {
+      clientId: 'fin_' + myId + '_' + Date.now(),
+      clean: true,
+      reconnectPeriod: 4000,
+      connectTimeout: 10000,
+      will: {
+        topic: TOPIC,
+        payload: JSON.stringify({type:'leave', id:myId}),
+        qos: 0,
+        retain: false
+      }
     });
-  }, 1500);
 
-  // Ao sair, desinscreve
-  window.addEventListener('beforeunload', ()=>{
-    pubnub.unsubscribeAll();
+    client.on('connect', () => {
+      client.subscribe(TOPIC, {qos:0});
+      client.publish(TOPIC, JSON.stringify({type:'join', id:myId}));
+    });
+
+    client.on('message', (topic, payload) => {
+      try {
+        const {type, id} = JSON.parse(payload.toString());
+        if(!id || id===myId) return;
+        if(type==='join'){ peers[id]=Date.now(); client.publish(TOPIC, JSON.stringify({type:'pong',id:myId})); }
+        else if(type==='ping'||type==='pong'){ peers[id]=Date.now(); }
+        else if(type==='leave'){ delete peers[id]; }
+        setCount(countOnline());
+      } catch(e){}
+    });
+
+    client.on('error', ()=>{});
+  } catch(e){}
+
+  // Heartbeat a cada 7s
+  setInterval(() => {
+    if(bc) bc.postMessage({type:'ping', id:myId});
+    if(client && client.connected) client.publish(TOPIC, JSON.stringify({type:'ping', id:myId}));
+    setCount(countOnline());
+  }, 7000);
+
+  window.addEventListener('beforeunload', () => {
+    if(bc) bc.postMessage({type:'leave', id:myId});
+    if(client && client.connected) client.publish(TOPIC, JSON.stringify({type:'leave', id:myId}));
   });
+
+  setCount(1);
 })();
 </script>
 
