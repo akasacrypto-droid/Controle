@@ -272,6 +272,19 @@ input[type=range]{-webkit-appearance:none;width:100%;height:4px;border-radius:99
 input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:var(--green);cursor:pointer;box-shadow:0 0 6px rgba(0,200,150,.4)}
 
 @keyframes pulse-green{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.45;transform:scale(1.35)}}
+
+/* ── PRINT / PDF ── */
+@media print {
+  body { background:#fff !important; color:#111 !important; overflow:visible !important; max-width:100% !important; margin:0 !important; font-family:'DM Sans',sans-serif; }
+  .topbar,.nav-tabs,.fab,.sheet-overlay,.sheet,.toast,#page-txs,#page-plan,#page-cfg,.notif-badge,#online-badge,#version-badge { display:none !important; }
+  .page { display:block !important; overflow:visible !important; padding:0 !important; flex:none !important; }
+  #page-report { display:block !important; }
+  .rep-period-btn { display:none !important; }
+  * { -webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; color-adjust:exact !important; }
+  .card, [style*="border-radius"] { break-inside:avoid; }
+  #pdf-header { display:block !important; }
+}
+#pdf-header { display:none; }
 /* ── RESPONSIVE DESKTOP ── */
 @media(min-width:600px){
   .page{padding:16px 20px calc(var(--sb) + 70px)}
@@ -333,6 +346,15 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
 <!-- ── PAGE: RELATÓRIO ── -->
 <div class="page on" id="page-report">
 
+  <!-- HEADER PDF (visível só ao imprimir) -->
+  <div id="pdf-header" style="border-bottom:2px solid #eee;padding-bottom:12px;margin-bottom:16px">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+      <div style="width:32px;height:32px;background:linear-gradient(135deg,#00C896,#009E76);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px">💰</div>
+      <div style="font-size:20px;font-weight:700;color:#111">Finanças — Relatório</div>
+    </div>
+    <div id="pdf-header-sub" style="font-size:12px;color:#666"></div>
+  </div>
+
   <!-- HEADER HERO -->
   <div style="background:linear-gradient(135deg,#1a1030,#120820);border:1px solid rgba(192,132,252,.18);border-radius:20px;padding:18px;margin-bottom:12px;position:relative;overflow:hidden">
     <div style="position:absolute;top:-40px;right:-30px;width:120px;height:120px;border-radius:50%;background:radial-gradient(circle,rgba(192,132,252,.1),transparent 65%)"></div>
@@ -352,6 +374,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
     <button class="rep-period-btn" id="rpb-6m" onclick="setRepPeriod('6m')">6 meses</button>
     <button class="rep-period-btn" id="rpb-year" onclick="setRepPeriod('year')">12 meses</button>
     <button class="rep-period-btn" id="rpb-all" onclick="setRepPeriod('all')">Tudo</button>
+    <button class="rep-period-btn" onclick="exportPDF()" style="margin-left:auto;flex-shrink:0;background:rgba(192,132,252,.12);border-color:rgba(192,132,252,.3);color:var(--purple)">📄 PDF</button>
   </div>
 
   <!-- RANKING CATEGORIAS -->
@@ -508,6 +531,54 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
 
     <div style="text-align:center;font-size:10px;color:var(--muted);padding:2px 0 4px;opacity:.6">frankfurter.app · atualiza a cada 60s</div>
 
+    <!-- ── ALERTAS DE COTAÇÃO ── -->
+    <div style="margin-top:14px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <div class="slbl" style="margin:0">🔔 Alertas de cotação</div>
+        <button onclick="openAlertSheet()" style="font-size:11px;padding:5px 12px;border-radius:99px;border:1px solid rgba(0,200,150,.35);background:var(--green-bg);color:var(--green);font-family:'DM Sans',sans-serif;cursor:pointer;font-weight:700">+ Novo alerta</button>
+      </div>
+      <div id="alert-list">
+        <div style="background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:18px;text-align:center;color:var(--muted);font-size:12px;line-height:1.7">
+          Nenhum alerta criado.<br><span style="font-size:11px">Ex: avise quando USD &gt; R$ 6,00</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── SHEET: NOVO ALERTA ── -->
+  <div id="alert-overlay" class="sheet-overlay" onclick="closeAlertSheet()"></div>
+  <div id="alert-sheet" class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">Novo alerta de cotação</div>
+    <div class="field">
+      <label>Moeda</label>
+      <select id="al-moeda" style="width:100%;padding:13px;background:var(--s2);border:1px solid var(--border2);border-radius:11px;color:var(--text);font-size:16px;font-family:'DM Sans',sans-serif;outline:none;-webkit-appearance:none">
+        <option value="USD">🇺🇸 USD — Dólar EUA</option>
+        <option value="EUR">🇪🇺 EUR — Euro</option>
+        <option value="GBP">🇬🇧 GBP — Libra</option>
+        <option value="ARS">🇦🇷 ARS — Peso Arg</option>
+        <option value="JPY">🇯🇵 JPY — Iene</option>
+        <option value="CAD">🇨🇦 CAD — Dólar CA</option>
+        <option value="CHF">🇨🇭 CHF — Franco CH</option>
+        <option value="CNY">🇨🇳 CNY — Yuan</option>
+        <option value="AUD">🇦🇺 AUD — Dólar AU</option>
+        <option value="MXN">🇲🇽 MXN — Peso MX</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Condição</label>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <button id="al-acima-btn" onclick="setAlCond('acima')" class="type-btn active-inc" style="font-size:13px">▲ Acima de</button>
+        <button id="al-abaixo-btn" onclick="setAlCond('abaixo')" class="type-btn" style="font-size:13px">▼ Abaixo de</button>
+      </div>
+    </div>
+    <div class="field">
+      <label>Valor alvo (R$)</label>
+      <input type="number" id="al-valor" inputmode="decimal" placeholder="Ex: 6.00" style="width:100%;padding:13px;background:var(--s2);border:1px solid var(--border2);border-radius:11px;color:var(--text);font-size:16px;font-family:'DM Mono',monospace;outline:none"/>
+    </div>
+    <button onclick="saveAlert()" class="sheet-save">Criar alerta</button>
+    <button onclick="closeAlertSheet()" class="sheet-cancel">Cancelar</button>
   </div>
 
   <!-- ── SHEET: GRÁFICO MOEDA ── -->
@@ -618,23 +689,30 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
 
   <div class="slbl">Backup</div>
   <div class="card" style="margin-bottom:12px">
-    <div class="notif-row" style="border-bottom:none;padding-bottom:6px">
-      <div class="notif-info">
-        <div class="ntitle">Exportar dados</div>
-        <div class="nsub" id="export-sub">Salva todos os lançamentos em arquivo</div>
+    <div style="padding:12px 14px 10px;border-bottom:1px solid var(--border)">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+        <div>
+          <div class="ntitle">Exportar backup</div>
+          <div class="nsub" id="export-sub">Salva lançamentos, metas e envelopes</div>
+        </div>
+        <button onclick="exportData()" style="background:var(--green-bg);border:1px solid rgba(0,200,150,.25);color:var(--green);border-radius:8px;padding:8px 14px;font-size:12px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:5px">⬇️ Exportar</button>
       </div>
-      <button onclick="exportData()" style="background:var(--green-bg);border:1px solid rgba(0,200,150,.25);color:var(--green);border-radius:8px;padding:8px 14px;font-size:12px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:5px">⬇️ Exportar</button>
+      <div id="backup-info" style="display:none;background:var(--s2);border-radius:8px;padding:8px 10px;font-size:10.5px;color:var(--muted);display:flex;gap:10px;flex-wrap:wrap"></div>
     </div>
-    <div style="height:1px;background:var(--border);margin:0 16px"></div>
-    <div class="notif-row" style="border-bottom:none;padding-top:6px">
-      <div class="notif-info">
-        <div class="ntitle">Importar backup</div>
-        <div class="nsub">Restaura de arquivo exportado</div>
+    <div style="padding:10px 14px 12px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+        <div>
+          <div class="ntitle">Importar backup</div>
+          <div class="nsub">Restaura de arquivo .json exportado</div>
+        </div>
+        <label style="background:var(--blue-bg);border:1px solid rgba(91,158,255,.25);color:var(--blue);border-radius:8px;padding:8px 14px;font-size:12px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:5px">
+          ⬆️ Importar
+          <input type="file" id="import-input" accept=".json" onchange="importData(event)" style="display:none"/>
+        </label>
       </div>
-      <label style="background:var(--blue-bg);border:1px solid rgba(91,158,255,.25);color:var(--blue);border-radius:8px;padding:8px 14px;font-size:12px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:5px">
-        ⬆️ Importar
-        <input type="file" id="import-input" accept=".json" onchange="importData(event)" style="display:none"/>
-      </label>
+      <div style="font-size:10.5px;color:var(--muted);background:var(--s2);border-radius:8px;padding:8px 10px;line-height:1.6">
+        ⚠️ A importação <b style="color:var(--text)">substitui</b> os dados atuais. Exporte um backup antes de importar.
+      </div>
     </div>
   </div>
 
@@ -1099,7 +1177,8 @@ function exportData(){
     goals:goalData,
     budget:budgetItems
   };
-  const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
+  const json=JSON.stringify(payload,null,2);
+  const blob=new Blob([json],{type:'application/json'});
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a');
   const date=new Date().toISOString().slice(0,10);
@@ -1107,13 +1186,19 @@ function exportData(){
   a.download=`financas_backup_${date}.json`;
   document.body.appendChild(a);a.click();
   document.body.removeChild(a);URL.revokeObjectURL(url);
+
+  // Mostra info do backup
+  const kb = (new Blob([json]).size/1024).toFixed(1);
   const parts=[];
-  if(total)parts.push(total+' lançamentos');
-  if(goalData.length)parts.push(goalData.length+' metas');
-  if(budgetItems.length)parts.push(budgetItems.length+' envelopes');
-  const el=document.getElementById('export-sub');
-  if(el)el.textContent=parts.join(' · ')+' exportados';
-  showToast('✅ Backup completo exportado!');
+  if(total)parts.push(`📋 ${total} lançamentos`);
+  if(goalData.length)parts.push(`🎯 ${goalData.length} metas`);
+  if(budgetItems.length)parts.push(`⚖️ ${budgetItems.length} envelopes`);
+  parts.push(`📦 ${kb} KB`);
+  const infoEl=document.getElementById('backup-info');
+  if(infoEl){ infoEl.style.display='flex'; infoEl.innerHTML=parts.map(p=>`<span>${p}</span>`).join('<span style="opacity:.3">·</span>'); }
+  const subEl=document.getElementById('export-sub');
+  if(subEl)subEl.textContent=`Último backup: ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}`;
+  showToast('✅ Backup exportado!');
 }
 
 function importData(event){
@@ -2189,6 +2274,149 @@ window.save=function(){
 })();
 </script>
 
+<!-- ── PDF EXPORT ── -->
+<script>
+window.exportPDF = function(){
+  // Preenche header com info do período
+  const titleEl = document.getElementById('rep-title');
+  const sub = document.getElementById('pdf-header-sub');
+  if(sub && titleEl) sub.textContent = titleEl.textContent + ' · Gerado em ' + new Date().toLocaleDateString('pt-BR',{day:'2-digit',month:'long',year:'numeric'});
+
+  // Força tab relatório visível
+  ['page-report','page-txs','page-plan','page-cfg'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) el.classList.remove('on');
+  });
+  document.getElementById('page-report').classList.add('on');
+
+  setTimeout(()=>{ window.print(); }, 150);
+};
+</script>
+
+<!-- ── ALERTAS DE COTAÇÃO ── -->
+<script>
+(function(){
+  const MOEDA_MAP = {
+    USD:{flag:'🇺🇸',name:'Dólar EUA'},EUR:{flag:'🇪🇺',name:'Euro'},
+    GBP:{flag:'🇬🇧',name:'Libra'},ARS:{flag:'🇦🇷',name:'Peso Arg'},
+    JPY:{flag:'🇯🇵',name:'Iene'},CAD:{flag:'🇨🇦',name:'Dólar CA'},
+    CHF:{flag:'🇨🇭',name:'Franco CH'},CNY:{flag:'🇨🇳',name:'Yuan'},
+    AUD:{flag:'🇦🇺',name:'Dólar AU'},MXN:{flag:'🇲🇽',name:'Peso MX'},
+  };
+
+  let alertCond = 'acima';
+  let alerts = JSON.parse(localStorage.getItem('_fin_alerts')||'[]');
+
+  function saveAlerts(){ localStorage.setItem('_fin_alerts', JSON.stringify(alerts)); }
+
+  window.setAlCond = function(c){
+    alertCond = c;
+    document.getElementById('al-acima-btn').className = 'type-btn' + (c==='acima'?' active-inc':'');
+    document.getElementById('al-abaixo-btn').className = 'type-btn' + (c==='abaixo'?' active-exp':'');
+  };
+
+  window.openAlertSheet = function(){
+    alertCond = 'acima';
+    setAlCond('acima');
+    document.getElementById('al-valor').value='';
+    document.getElementById('alert-overlay').classList.add('open');
+    document.getElementById('alert-sheet').classList.add('open');
+  };
+
+  window.closeAlertSheet = function(){
+    document.getElementById('alert-overlay').classList.remove('open');
+    document.getElementById('alert-sheet').classList.remove('open');
+  };
+
+  window.saveAlert = function(){
+    const moeda = document.getElementById('al-moeda').value;
+    const valor = parseFloat(document.getElementById('al-valor').value);
+    if(!valor || valor<=0){ showToast('Informe um valor válido'); return; }
+    alerts.push({ id: Date.now(), moeda, cond: alertCond, valor, active: true, triggered: false });
+    saveAlerts();
+    renderAlerts();
+    closeAlertSheet();
+    showToast('✅ Alerta criado!');
+  };
+
+  window.deleteAlert = function(id){
+    alerts = alerts.filter(a=>a.id!==id);
+    saveAlerts();
+    renderAlerts();
+  };
+
+  window.toggleAlert = function(id){
+    const a = alerts.find(x=>x.id===id);
+    if(a){ a.active=!a.active; a.triggered=false; saveAlerts(); renderAlerts(); }
+  };
+
+  function renderAlerts(){
+    const el = document.getElementById('alert-list');
+    if(!el) return;
+    if(!alerts.length){
+      el.innerHTML = `<div style="background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:18px;text-align:center;color:var(--muted);font-size:12px;line-height:1.7">Nenhum alerta criado.<br><span style="font-size:11px">Ex: avise quando USD &gt; R$ 6,00</span></div>`;
+      return;
+    }
+    el.innerHTML = `<div style="background:var(--s1);border:1px solid var(--border);border-radius:14px;overflow:hidden">` +
+      alerts.map((a,i)=>{
+        const m = MOEDA_MAP[a.moeda]||{flag:'💱',name:a.moeda};
+        const ico = a.cond==='acima'?'▲':'▼';
+        const col = a.cond==='acima'?'var(--green)':'var(--red)';
+        const isLast = i===alerts.length-1;
+        const statusBg = a.triggered ? 'rgba(255,184,77,.12)' : a.active ? 'rgba(0,200,150,.08)' : 'transparent';
+        const statusTxt = a.triggered ? '🔔 Disparado' : a.active ? 'Ativo' : 'Pausado';
+        const statusCol = a.triggered ? 'var(--amber)' : a.active ? 'var(--green)' : 'var(--muted)';
+        return `<div style="display:flex;align-items:center;gap:11px;padding:12px 14px;${isLast?'':'border-bottom:1px solid var(--border)'};background:${statusBg}">
+          <div style="width:38px;height:38px;border-radius:10px;background:var(--s2);border:1px solid var(--border2);display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0;gap:1px">
+            <span style="font-size:16px;line-height:1">${m.flag}</span>
+            <span style="font-size:8px;font-weight:700;color:var(--muted)">${a.moeda}</span>
+          </div>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:13px;font-weight:600">${m.name}</div>
+            <div style="font-size:11px;color:${col};margin-top:2px;font-weight:600">${ico} R$ ${a.valor.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:4})}</div>
+            <div style="font-size:10px;color:${statusCol};margin-top:1px">${statusTxt}</div>
+          </div>
+          <label class="toggle-wrap" style="flex-shrink:0">
+            <input type="checkbox" ${a.active?'checked':''} onchange="toggleAlert(${a.id})"/>
+            <span class="toggle-slider"></span>
+          </label>
+          <button onclick="deleteAlert(${a.id})" style="background:var(--red-bg);border:1px solid rgba(255,92,92,.2);color:var(--red);border-radius:7px;width:28px;height:28px;font-size:12px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0">✕</button>
+        </div>`;
+      }).join('') + `</div>`;
+  }
+
+  // Verifica alertas sempre que as cotações atualizam
+  window._checkPriceAlerts = function(ratesInBRL){
+    let anyTriggered = false;
+    alerts.forEach(a=>{
+      if(!a.active || a.triggered) return;
+      const rate = ratesInBRL[a.moeda];
+      if(!rate) return;
+      const hit = a.cond==='acima' ? rate >= a.valor : rate <= a.valor;
+      if(hit){
+        a.triggered = true;
+        anyTriggered = true;
+        showToast(`🔔 ${a.moeda} ${a.cond==='acima'?'▲':'▼'} R$ ${a.valor.toFixed(2)} — R$ ${rate.toFixed(4)}`);
+        if('Notification' in window && Notification.permission==='granted'){
+          new Notification(`Alerta Câmbio: ${a.moeda}`,{body:`Cotação ${a.cond==='acima'?'acima de':'abaixo de'} R$ ${a.valor.toFixed(2)}`,icon:'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">💰</text></svg>'});
+        }
+      }
+    });
+    if(anyTriggered){ saveAlerts(); renderAlerts(); }
+  };
+
+  // Swipe to close
+  let _sy2=0;
+  const as=document.getElementById('alert-sheet');
+  if(as){
+    as.addEventListener('touchstart',e=>{_sy2=e.touches[0].clientY},{passive:true});
+    as.addEventListener('touchmove',e=>{if(e.touches[0].clientY-_sy2>70)closeAlertSheet()},{passive:true});
+  }
+
+  renderAlerts();
+})();
+</script>
+
 <!-- ── COTAÇÕES ── -->
 <script>
 (function(){
@@ -2480,6 +2708,8 @@ window.save=function(){
     if(lbl && force) lbl.textContent = '...';
     await fetchRates(force);
     renderGrid();
+    // Verifica alertas de cotação
+    if(window._checkPriceAlerts) window._checkPriceAlerts(ratesInBRL);
     if(!autoInterval){
       autoInterval = setInterval(()=>{
         if(document.getElementById('planpage-cambio')?.style.display !== 'none')
