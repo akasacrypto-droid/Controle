@@ -2044,10 +2044,7 @@ document.getElementById('goal-sheet').addEventListener('touchstart',e=>{startY=e
 document.getElementById('goal-sheet').addEventListener('touchmove',e=>{if(e.touches[0].clientY-startY>70)closeGoalSheet()},{passive:true});
 
 /* ── VERSION / DEPLOY CHECK ── */
-const DEPLOY_COMMIT='4c304cb';
 const GITHUB_REPO='akasacrypto-droid/financeiro';
-const VERSION_KEY='fin_last_seen_commit';
-const DEPLOY_TIME_KEY='fin_deploy_time_'+DEPLOY_COMMIT;
 
 function timeSince(ms){
   const s=Math.floor((Date.now()-ms)/1000);
@@ -2057,66 +2054,70 @@ function timeSince(ms){
   const d=Math.floor(h/24);return d+'d atrás';
 }
 
-function updateDeployTimeBadge(){
-  const ts=localStorage.getItem(DEPLOY_TIME_KEY);
-  const el=document.getElementById('vbadge-time');
-  if(ts&&el)el.textContent=timeSince(parseInt(ts));
-}
-
-function showVersionInfo(){
-  localStorage.setItem(VERSION_KEY,DEPLOY_COMMIT);
-  const badge=document.getElementById('version-badge');
-  badge.style.color='var(--muted)';badge.style.borderColor='var(--border2)';badge.style.background='var(--s2)';
-  const ts=localStorage.getItem(DEPLOY_TIME_KEY);
-  showToast('Deploy '+DEPLOY_COMMIT+(ts?' · '+timeSince(parseInt(ts)):''));
-}
-
 async function checkForNewDeploy(){
   try{
     const res=await fetch(`https://api.github.com/repos/${GITHUB_REPO}/commits/HEAD`,{headers:{'Accept':'application/vnd.github.v3+json'}});
     if(!res.ok)return;
     const data=await res.json();
     const latestSha=data.sha?data.sha.slice(0,7):null;
+    const commitDate=data.commit?.committer?.date||data.commit?.author?.date||null;
     if(!latestSha)return;
+
     const badge=document.getElementById('version-badge');
     const hashEl=document.getElementById('vbadge-hash');
     const timeEl=document.getElementById('vbadge-time');
+    const seenKey='fin_seen_'+latestSha;
 
-    if(latestSha!==DEPLOY_COMMIT){
-      // pending commit not yet deployed
-      if(hashEl)hashEl.textContent=DEPLOY_COMMIT+'→'+latestSha;
-      if(timeEl)timeEl.textContent='pendente';
-      badge.style.color='var(--amber)';badge.style.borderColor='rgba(255,184,77,.35)';badge.style.background='var(--amber-bg)';
-      badge.title='Novo commit no GitHub ainda não deployado: '+latestSha;
-    } else {
-      // commit matches deploy — record first seen time
-      if(!localStorage.getItem(DEPLOY_TIME_KEY)){
-        localStorage.setItem(DEPLOY_TIME_KEY,Date.now().toString());
-      }
-      const seen=localStorage.getItem(VERSION_KEY);
-      if(seen!==DEPLOY_COMMIT){
-        // first load after new deploy
-        if(hashEl)hashEl.textContent='✓ '+DEPLOY_COMMIT;
-        badge.style.color='var(--green)';badge.style.borderColor='rgba(0,200,150,.35)';badge.style.background='var(--green-bg)';
-        setTimeout(()=>{
-          if(hashEl)hashEl.textContent=DEPLOY_COMMIT;
-          badge.style.color='var(--muted)';badge.style.borderColor='var(--border2)';badge.style.background='var(--s2)';
-        },5000);
-      } else {
-        if(hashEl)hashEl.textContent=DEPLOY_COMMIT;
+    if(hashEl)hashEl.textContent=latestSha;
+
+    // Marca tempo do commit
+    const tsKey='fin_ts_'+latestSha;
+    if(!localStorage.getItem(tsKey)){
+      const ts=commitDate?new Date(commitDate).getTime():Date.now();
+      localStorage.setItem(tsKey,ts.toString());
+    }
+    if(timeEl){
+      const ts=parseInt(localStorage.getItem(tsKey)||Date.now());
+      timeEl.textContent=timeSince(ts);
+    }
+
+    const seen=localStorage.getItem(seenKey);
+    if(!seen){
+      // Novo commit não visto ainda
+      badge.style.color='var(--green)';badge.style.borderColor='rgba(0,200,150,.35)';badge.style.background='var(--green-bg)';
+      if(hashEl)hashEl.textContent='✓ '+latestSha;
+      setTimeout(()=>{
+        localStorage.setItem(seenKey,'1');
+        if(hashEl)hashEl.textContent=latestSha;
         badge.style.color='var(--muted)';badge.style.borderColor='var(--border2)';badge.style.background='var(--s2)';
-      }
-      localStorage.setItem(VERSION_KEY,DEPLOY_COMMIT);
-      updateDeployTimeBadge();
+      },5000);
+    } else {
+      badge.style.color='var(--muted)';badge.style.borderColor='var(--border2)';badge.style.background='var(--s2)';
     }
   }catch(e){}
 }
 
-// update elapsed time every minute
-updateDeployTimeBadge();
+function showVersionInfo(){
+  checkForNewDeploy();
+}
+
+// Atualiza tempo a cada minuto
+setInterval(async()=>{
+  try{
+    const res=await fetch(`https://api.github.com/repos/${GITHUB_REPO}/commits/HEAD`,{headers:{'Accept':'application/vnd.github.v3+json'}});
+    if(!res.ok)return;
+    const data=await res.json();
+    const latestSha=data.sha?data.sha.slice(0,7):null;
+    if(!latestSha)return;
+    const timeEl=document.getElementById('vbadge-time');
+    const tsKey='fin_ts_'+latestSha;
+    const ts=parseInt(localStorage.getItem(tsKey)||Date.now());
+    if(timeEl)timeEl.textContent=timeSince(ts);
+  }catch(e){}
+},60*1000);
+
 checkForNewDeploy();
 setInterval(checkForNewDeploy,5*60*1000);
-setInterval(updateDeployTimeBadge,60*1000);
 </script>
 
 <script>
@@ -2232,31 +2233,42 @@ window.save=function(){
     if(!grid) return;
 
     loading.style.display = 'none';
-    grid.style.display = 'grid';
+    grid.style.cssText = 'display:block;margin-bottom:8px';
 
     const now = new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
     const lbl = document.getElementById('cambio-update-lbl');
     if(lbl) lbl.textContent = now;
 
     const lista = MOEDAS.filter(m => m.code !== 'BRL');
-    grid.innerHTML = lista.map(m => {
-      const rate = ratesInBRL[m.code]; // 1 m.code = rate BRL
+    grid.innerHTML = `<div style="background:var(--s1);border:1px solid var(--border);border-radius:14px;overflow:hidden">` +
+    lista.map((m, i) => {
+      const rate = ratesInBRL[m.code];
       if(!rate) return '';
       const brl = fmtVal(rate, 'BRL');
-      const inv = fmtVal(1/rate, m.code); // 1 BRL = ? moeda
+      const inv = fmtVal(1/rate, m.code);
+      const isLast = i === lista.length - 1;
       return `
-      <div onclick="document.getElementById('conv-de').value='BRL';document.getElementById('conv-para').value='${m.code}';calcConv('de')"
-           style="background:var(--s1);border:1px solid var(--border);border-radius:13px;padding:11px 12px;position:relative;overflow:hidden;cursor:pointer;active:background:var(--s2)">
-        <div style="position:absolute;top:0;left:0;right:0;height:2px;background:var(--blue);opacity:.4;border-radius:13px 13px 0 0"></div>
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px">
-          <span style="font-size:17px">${m.flag}</span>
-          <span style="font-size:9px;font-weight:700;color:var(--muted);background:var(--s3);border-radius:4px;padding:2px 5px">${m.code}</span>
+      <div onclick="document.getElementById('conv-de').value='BRL';document.getElementById('conv-para').value='${m.code}';calcConv('de');document.getElementById('conv-val-de').scrollIntoView({behavior:'smooth',block:'center'})"
+           style="display:flex;align-items:center;gap:12px;padding:12px 14px;${isLast?'':'border-bottom:1px solid var(--border)'};cursor:pointer;transition:background .1s"
+           onmousedown="this.style.background='var(--s2)'" onmouseup="this.style.background=''" ontouchstart="this.style.background='var(--s2)'" ontouchend="this.style.background=''">
+        <!-- Flag + código -->
+        <div style="width:38px;height:38px;border-radius:10px;background:var(--s2);border:1px solid var(--border2);display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0;gap:1px">
+          <span style="font-size:16px;line-height:1">${m.flag}</span>
+          <span style="font-size:8px;font-weight:700;color:var(--muted);letter-spacing:.3px">${m.code}</span>
         </div>
-        <div style="font-size:9.5px;color:var(--muted);margin-bottom:3px">${m.name}</div>
-        <div style="font-family:'DM Mono',monospace;font-size:14px;font-weight:700;color:var(--text)">R$ ${brl}</div>
-        <div style="font-size:9px;color:var(--muted);margin-top:2px">1 BRL = ${inv} ${m.code}</div>
+        <!-- Nome -->
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;font-weight:600;color:var(--text)">${m.name}</div>
+          <div style="font-size:10.5px;color:var(--muted);margin-top:1px">1 BRL = ${inv} ${m.code}</div>
+        </div>
+        <!-- Valor em BRL -->
+        <div style="text-align:right;flex-shrink:0">
+          <div style="font-family:'DM Mono',monospace;font-size:14px;font-weight:700;color:var(--text)">R$ ${brl}</div>
+          <div style="font-size:10px;color:var(--muted);margin-top:1px">por 1 ${m.code}</div>
+        </div>
+        <div style="color:var(--muted);font-size:12px;flex-shrink:0;opacity:.5">›</div>
       </div>`;
-    }).join('');
+    }).join('') + `</div>`;
 
     calcConv('de');
   }
