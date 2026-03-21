@@ -2669,17 +2669,27 @@ tr+tr td{border-top:1px solid #f3f3f3}
     const fonte = document.getElementById('cambio-fonte');
     if(fonte) fonte.textContent = 'CoinGecko · cotação real · atualiza a cada 60s';
 
+    // Moeda base = campo "De"
+    const base = document.getElementById('conv-de')?.value || 'BRL';
+
     grid.innerHTML = `<div style="background:var(--s1);border:1px solid var(--border);border-radius:14px;overflow:hidden">` +
       CRYPTOS.map((c, i)=>{
-        const price = cryptoRatesInBRL[c.code];
+        const priceInBRL = cryptoRatesInBRL[c.code];
+        if(!priceInBRL) return '';
+
+        // Converte preço para a moeda base selecionada
+        const baseRate = window._ratesInBRL?.[base] || 1; // quanto BRL vale 1 unidade de base
+        const price = base === 'BRL' ? priceInBRL : priceInBRL / baseRate;
+
         const pct   = cryptoChange24h[c.code];
-        if(!price) return '';
         const isLast = i === CRYPTOS.length-1;
-        const up  = pct >= 0;
-        const col = pct === null||pct===undefined ? 'var(--muted)' : up ? 'var(--green)' : 'var(--red)';
-        const bg  = pct === null||pct===undefined ? 'var(--s3)' : up ? 'rgba(0,200,150,.12)' : 'rgba(255,92,92,.12)';
-        const ico = pct === null||pct===undefined ? '' : up ? '▲ ' : '▼ ';
-        const pctTxt = pct === null||pct===undefined ? '—' : `${ico}${Math.abs(pct).toFixed(2)}%`;
+        const up  = pct !== null && pct >= 0;
+        const col = pct == null ? 'var(--muted)' : up ? 'var(--green)' : 'var(--red)';
+        const bg  = pct == null ? 'var(--s3)'    : up ? 'rgba(0,200,150,.12)' : 'rgba(255,92,92,.12)';
+        const ico = pct == null ? '' : up ? '▲ ' : '▼ ';
+        const pctTxt = pct == null ? '—' : `${ico}${Math.abs(pct).toFixed(2)}%`;
+        const priceStr = fmtCrypto(price);
+        const sym = base === 'BRL' ? 'R$' : base;
         return `
         <div onclick="setCryptoConv('${c.code}')"
              style="display:flex;align-items:center;gap:12px;padding:12px 14px;${isLast?'':'border-bottom:1px solid var(--border)'};cursor:pointer;transition:background .12s"
@@ -2690,10 +2700,10 @@ tr+tr td{border-top:1px solid #f3f3f3}
           </div>
           <div style="flex:1;min-width:0">
             <div style="font-size:13px;font-weight:600;color:var(--text)">${c.name}</div>
-            <div style="font-size:10px;color:var(--muted);margin-top:1px">1 ${c.code} em BRL</div>
+            <div style="font-size:10px;color:var(--muted);margin-top:1px">1 ${c.code} em ${base}</div>
           </div>
           <div style="text-align:right;flex-shrink:0">
-            <div style="font-family:'DM Mono',monospace;font-size:13px;font-weight:700;color:var(--text)">R$ ${fmtCrypto(price)}</div>
+            <div style="font-family:'DM Mono',monospace;font-size:13px;font-weight:700;color:var(--text)">${sym} ${priceStr}</div>
             <div style="font-size:10px;font-weight:700;color:${col};background:${bg};border-radius:5px;padding:1px 6px;margin-top:3px;display:inline-block">${pctTxt}</div>
           </div>
           <div style="color:var(--muted);font-size:11px;opacity:.4;flex-shrink:0">›</div>
@@ -2895,7 +2905,18 @@ tr+tr td{border-top:1px solid #f3f3f3}
     document.getElementById('conv-val-para').textContent = fmtVal(result, para);
     if(taxa1 !== null)
       document.getElementById('conv-taxa').textContent = `1 ${de} = ${fmtVal(taxa1, para)} ${para}`;
+
+    // Re-renderiza listas com nova moeda base
+    const prevBase = window._listBase;
+    window._listBase = de;
+    if(prevBase !== de){
+      const tab = document.getElementById('crypto-grid')?.style.display !== 'none' ? 'crypto' : 'fiat';
+      if(tab === 'fiat' && document.getElementById('cambio-grid')?.style.display !== 'none') renderGrid();
+      if(tab === 'crypto' && window._renderCryptoGrid) window._renderCryptoGrid();
+    }
   };
+
+  window._listBase = 'BRL'; // base atual da lista
 
   window.swapConv = function(){
     const deEl   = document.getElementById('conv-de');
@@ -2920,19 +2941,24 @@ tr+tr td{border-top:1px solid #f3f3f3}
     const lbl = document.getElementById('cambio-update-lbl');
     if(lbl) lbl.textContent = now;
 
+    // Moeda base = campo "De" do conversor
+    const base = document.getElementById('conv-de')?.value || 'BRL';
+    const baseName = base;
+
     grid.innerHTML = `<div style="background:var(--s1);border:1px solid var(--border);border-radius:14px;overflow:hidden">` +
-      MOEDAS.map((m, i) => {
-        const rate = ratesInBRL[m.code];
+      MOEDAS.filter(m => m.code !== base).map((m, i, arr) => {
+        const rate = convert(1, m.code, base); // 1 moeda = X base
+        const inv  = convert(1, base, m.code); // 1 base = X moeda
         if(!rate) return '';
-        const brl  = fmtVal(rate, 'BRL');
-        const inv  = fmtVal(1/rate, m.code);
         const pct  = getVar(m.code);
         const up   = pct !== null && pct >= 0;
         const col  = pct === null ? 'var(--muted)' : up ? 'var(--green)' : 'var(--red)';
         const bg   = pct === null ? 'var(--s3)' : up ? 'rgba(0,200,150,.12)' : 'rgba(255,92,92,.12)';
         const ico  = pct === null ? '' : up ? '▲ ' : '▼ ';
         const pctTxt = pct === null ? '—' : `${ico}${Math.abs(pct).toFixed(2)}%`;
-        const isLast = i === MOEDAS.length - 1;
+        const isLast = i === arr.length - 1;
+        const rateStr = fmtVal(rate, base);
+        const invStr  = fmtVal(inv,  m.code);
         return `
         <div onclick="openMoedaSheet('${m.code}')"
              style="display:flex;align-items:center;gap:12px;padding:12px 14px;${isLast?'':'border-bottom:1px solid var(--border)'};cursor:pointer;transition:background .12s"
@@ -2943,10 +2969,10 @@ tr+tr td{border-top:1px solid #f3f3f3}
           </div>
           <div style="flex:1;min-width:0">
             <div style="font-size:13px;font-weight:600;color:var(--text)">${m.name}</div>
-            <div style="font-size:10px;color:var(--muted);margin-top:1px">1 BRL = ${inv} ${m.code}</div>
+            <div style="font-size:10px;color:var(--muted);margin-top:1px">1 ${baseName} = ${invStr} ${m.code}</div>
           </div>
           <div style="text-align:right;flex-shrink:0">
-            <div style="font-family:'DM Mono',monospace;font-size:14px;font-weight:700;color:var(--text)">R$ ${brl}</div>
+            <div style="font-family:'DM Mono',monospace;font-size:14px;font-weight:700;color:var(--text)">${base === 'BRL' ? 'R$' : base} ${rateStr}</div>
             <div style="font-size:10px;font-weight:700;color:${col};background:${bg};border-radius:5px;padding:1px 6px;margin-top:3px;display:inline-block">${pctTxt}</div>
           </div>
           <div style="color:var(--muted);font-size:11px;opacity:.4;flex-shrink:0">›</div>
