@@ -472,14 +472,14 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
     <div style="background:linear-gradient(135deg,#151e38,#0f1628);border:1px solid rgba(91,158,255,.18);border-radius:18px;padding:16px;margin-bottom:12px">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
         <span style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;font-weight:700">💱 Conversor</span>
-        <button onclick="loadCotacoes(true)" style="font-size:10px;padding:4px 10px;border-radius:99px;border:1px solid var(--border2);background:var(--s2);color:var(--muted2);font-family:'DM Sans',sans-serif;cursor:pointer;font-weight:700;display:flex;align-items:center;gap:4px">🔄 <span id="cambio-update-lbl">atualizar</span></button>
+        <button onclick="window.loadCotacoes(true)" style="font-size:10px;padding:4px 10px;border-radius:99px;border:1px solid var(--border2);background:var(--s2);color:var(--muted2);font-family:'DM Sans',sans-serif;cursor:pointer;font-weight:700;display:flex;align-items:center;gap:4px">🔄 <span id="cambio-update-lbl">atualizar</span></button>
       </div>
 
       <!-- Campo DE -->
       <div style="background:var(--s2);border:1px solid var(--border2);border-radius:12px;padding:12px 14px;margin-bottom:8px">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
           <span style="font-size:9.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;font-weight:700">De</span>
-          <select id="conv-de" onchange="calcConv('de')" style="background:var(--s3);border:1px solid var(--border2);border-radius:7px;color:var(--text);font-size:11px;font-family:'DM Sans',sans-serif;font-weight:700;padding:4px 8px;outline:none;cursor:pointer;-webkit-appearance:none;text-align:center;min-width:100px">
+          <select id="conv-de" onchange="calcConv()" style="background:var(--s3);border:1px solid var(--border2);border-radius:7px;color:var(--text);font-size:11px;font-family:'DM Sans',sans-serif;font-weight:700;padding:4px 8px;outline:none;cursor:pointer;-webkit-appearance:none;text-align:center;min-width:100px">
             <optgroup label="Fiduciário">
             <option value="BRL">🇧🇷 BRL — Real</option>
             <option value="USD">🇺🇸 USD — Dólar</option>
@@ -517,7 +517,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
       <div style="background:var(--s2);border:1px solid rgba(91,158,255,.2);border-radius:12px;padding:12px 14px">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
           <span style="font-size:9.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;font-weight:700">Para</span>
-          <select id="conv-para" onchange="calcConv('para')" style="background:var(--s3);border:1px solid var(--border2);border-radius:7px;color:var(--text);font-size:11px;font-family:'DM Sans',sans-serif;font-weight:700;padding:4px 8px;outline:none;cursor:pointer;-webkit-appearance:none;text-align:center;min-width:100px">
+          <select id="conv-para" onchange="calcConv()" style="background:var(--s3);border:1px solid var(--border2);border-radius:7px;color:var(--text);font-size:11px;font-family:'DM Sans',sans-serif;font-weight:700;padding:4px 8px;outline:none;cursor:pointer;-webkit-appearance:none;text-align:center;min-width:100px">
             <optgroup label="Fiduciário">
             <option value="BRL">🇧🇷 BRL — Real</option>
             <option value="USD" selected>🇺🇸 USD — Dólar</option>
@@ -1081,8 +1081,7 @@ function goPlanTab(sub){
   if(sub==='metas')renderGoals();
   if(sub==='cambio'){ 
     const savedTab = sessionStorage.getItem('_cambioTab') || 'fiat';
-    if(window.setCambioTab) setCambioTab(savedTab); 
-    else loadCotacoes(); 
+    setTimeout(()=>{ if(window.setCambioTab) window.setCambioTab(savedTab); }, 50);
   }
 }
 
@@ -2785,7 +2784,7 @@ tr+tr td{border-top:1px solid #f3f3f3}
       if(fonte) fonte.textContent = 'AwesomeAPI · cotação real · atualiza a cada 60s';
       fiatLoad.style.display = 'block';
       fiatGrid.style.display = 'none';
-      loadCotacoes(false);
+      if(window.loadCotacoes) window.loadCotacoes(false);
     } else {
       cryptoBtn.style.cssText = 'flex:1;padding:8px;border-radius:10px;border:1px solid rgba(255,184,77,.35);background:rgba(255,184,77,.12);color:var(--amber);font-size:12px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer';
       fiatBtn.style.cssText   = 'flex:1;padding:8px;border-radius:10px;border:1px solid var(--border2);background:none;color:var(--muted);font-size:12px;font-weight:700;font-family:\'DM Sans\',sans-serif;cursor:pointer';
@@ -3193,7 +3192,6 @@ tr+tr td{border-top:1px solid #f3f3f3}
     } catch(e){
       loadEl.textContent = 'Erro ao carregar gráfico';
       loadEl.style.display = 'flex';
-    }
     }
   }
 
