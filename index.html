@@ -46,8 +46,8 @@ body{background:var(--bg);color:var(--text);display:flex;flex-direction:column;o
 .logo-txt{font-size:15px;font-weight:600;letter-spacing:-.3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .topbar-right{display:flex;align-items:center;gap:6px;flex-shrink:0}
 .notif-btn{width:32px;height:32px;background:var(--s2);border:1px solid var(--border2);border-radius:8px;color:var(--muted2);font-size:15px;display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative;flex-shrink:0}
-.notif-badge{position:absolute;top:5px;right:5px;width:6px;height:6px;border-radius:50%;background:var(--green);display:none}
-.notif-badge.on{display:block}
+.notif-badge{position:absolute;top:-4px;right:-4px;min-width:16px;height:16px;border-radius:99px;background:var(--red);display:none;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#fff;padding:0 3px;font-family:'DM Sans',sans-serif}
+.notif-badge.on{display:flex}
 .month-nav{display:flex;align-items:center;gap:4px;flex-shrink:0}
 .mnav-btn{width:30px;height:30px;background:var(--s2);border:1px solid var(--border2);border-radius:7px;color:var(--text);font-size:15px;display:flex;align-items:center;justify-content:center;cursor:pointer;user-select:none;flex-shrink:0}
 .mnav-btn:active{background:var(--s3);transform:scale(.91)}
@@ -634,6 +634,20 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
 
 </div>
 
+<!-- ── PAGE: NOTIFICAÇÕES ── -->
+<div class="page" id="page-notif">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+    <div class="slbl" style="margin:0">🔔 Central de alertas</div>
+    <button onclick="clearNotifHistory()" style="font-size:11px;padding:5px 12px;border-radius:99px;border:1px solid var(--border2);background:none;color:var(--muted);font-family:'DM Sans',sans-serif;cursor:pointer;font-weight:600">Limpar tudo</button>
+  </div>
+  <div id="notif-history-list">
+    <div style="background:var(--s1);border:1px solid var(--border);border-radius:14px;padding:32px 20px;text-align:center">
+      <div style="font-size:36px;margin-bottom:10px;opacity:.25">🔔</div>
+      <div style="color:var(--muted);font-size:13px;line-height:1.7">Nenhuma notificação ainda.<br><span style="font-size:11px">Os alertas de cotação aparecerão aqui.</span></div>
+    </div>
+  </div>
+</div>
+
 <!-- ── PAGE: CONFIG ── -->
 <div class="page" id="page-cfg">
 
@@ -988,11 +1002,19 @@ function goTab(tab){
   activeTab=tab;
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('on'));
   document.querySelectorAll('.nav-tab').forEach(b=>b.classList.remove('on'));
-  document.getElementById('page-'+tab).classList.add('on');
-  document.getElementById('tab-'+tab).classList.add('on');
+  const pg=document.getElementById('page-'+tab);
+  const tb=document.getElementById('tab-'+tab);
+  if(pg) pg.classList.add('on');
+  if(tb) tb.classList.add('on');
   document.getElementById('fab').style.display=(tab==='txs'||tab==='report')?'flex':'none';
   if(tab==='plan')renderPlan();
   if(tab==='report')renderReport();
+  if(tab==='notif'){
+    // Limpa badge ao abrir
+    document.getElementById('notif-badge').classList.remove('on');
+    localStorage.setItem('_fin_notif_unseen','0');
+    renderNotifHistory();
+  }
 }
 
 let activePlanSubTab='metas';
@@ -2492,11 +2514,20 @@ tr+tr td{border-top:1px solid #f3f3f3}
       if(hit){
         a.triggered = true;
         anyTriggered = true;
-        showToast(`🔔 ${a.moeda} ${a.cond==='acima'?'▲':'▼'} R$ ${a.valor.toFixed(2)} — R$ ${rate.toFixed(4)}`);
+        const ico = a.cond==='acima'?'▲':'▼';
+        const brl = rate.toLocaleString('pt-BR',{minimumFractionDigits:4,maximumFractionDigits:4});
+        const title = `Alerta ${a.moeda} ${ico} R$ ${a.valor.toFixed(2)}`;
+        const body  = `Cotação atual: R$ ${brl}`;
+        // Adiciona no histórico + toca som
+        if(window.addNotifHistory) window.addNotifHistory({
+          title, body, moeda:a.moeda, cond:a.cond,
+          valor:a.valor, rateNow:rate, time:Date.now()
+        });
+        showToast(`🔔 ${title}`);
+        // Notificação do sistema
         if('Notification' in window && Notification.permission==='granted'){
-          new Notification(`💰 Controle+ — Alerta ${a.moeda}`,{
-            body:`Cotação ${a.cond==='acima'?'acima de':'abaixo de'} R$ ${a.valor.toFixed(2)}\nAtual: R$ ${rate.toFixed(4)}`,
-            tag:`alert-${a.id}`, requireInteraction:true
+          new Notification(`💰 Controle+ — ${title}`,{
+            body, tag:`alert-${a.id}`, requireInteraction:true
           });
         }
       }
@@ -2973,6 +3004,126 @@ tr+tr td{border-top:1px solid #f3f3f3}
 })();
 </script>
 
+<!-- ── CENTRAL DE NOTIFICAÇÕES + SOM ── -->
+<script>
+(function(){
+
+  // ── SOM DE ALERTA (Web Audio API — sem arquivo externo) ──
+  function playAlertSound(){
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+
+      function beep(freq, start, dur, vol=0.4){
+        const osc  = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, ctx.currentTime + start);
+        gain.gain.setValueAtTime(0, ctx.currentTime + start);
+        gain.gain.linearRampToValueAtTime(vol, ctx.currentTime + start + 0.01);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + start + dur);
+        osc.start(ctx.currentTime + start);
+        osc.stop(ctx.currentTime + start + dur + 0.05);
+      }
+
+      // Três notas ascendentes — tom de alerta financeiro
+      beep(523, 0.00, 0.18);  // C5
+      beep(659, 0.20, 0.18);  // E5
+      beep(784, 0.40, 0.35);  // G5
+    } catch(e){}
+  }
+  window._playAlertSound = playAlertSound;
+
+  // ── HISTÓRICO DE NOTIFICAÇÕES ──
+  const HIST_KEY = '_fin_notif_history';
+  const MAX_HIST = 50;
+
+  function getHistory(){ return JSON.parse(localStorage.getItem(HIST_KEY)||'[]'); }
+  function saveHistory(h){ localStorage.setItem(HIST_KEY, JSON.stringify(h.slice(0, MAX_HIST))); }
+
+  window.addNotifHistory = function(notif){
+    // notif = { title, body, type, time, moeda, valor, rateNow, cond }
+    const h = getHistory();
+    h.unshift({ ...notif, time: notif.time || Date.now(), read: false });
+    saveHistory(h);
+    // Atualiza badge com contagem
+    const unseen = h.filter(n=>!n.read).length;
+    const badge = document.getElementById('notif-badge');
+    if(badge && unseen > 0){
+      badge.classList.add('on');
+      badge.textContent = unseen > 9 ? '9+' : unseen;
+    }
+    // Toca som
+    playAlertSound();
+  };
+
+  window.clearNotifHistory = function(){
+    saveHistory([]);
+    renderNotifHistory();
+    document.getElementById('notif-badge').classList.remove('on');
+  };
+
+  window.renderNotifHistory = function(){
+    const list = document.getElementById('notif-history-list');
+    if(!list) return;
+    const h = getHistory();
+    if(!h.length){
+      list.innerHTML = `<div style="background:var(--s1);border:1px solid var(--border);border-radius:14px;padding:32px 20px;text-align:center">
+        <div style="font-size:36px;margin-bottom:10px;opacity:.25">🔔</div>
+        <div style="color:var(--muted);font-size:13px;line-height:1.7">Nenhuma notificação ainda.<br><span style="font-size:11px">Os alertas de cotação aparecerão aqui.</span></div>
+      </div>`;
+      return;
+    }
+
+    // Marca todas como lidas ao renderizar
+    const marked = h.map(n=>({...n, read:true}));
+    saveHistory(marked);
+
+    list.innerHTML = `<div style="background:var(--s1);border:1px solid var(--border);border-radius:14px;overflow:hidden">` +
+      marked.map((n, i) => {
+        const isLast = i === marked.length-1;
+        const dt = new Date(n.time);
+        const timeStr = dt.toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+        const up = n.cond === 'acima';
+        const col = up ? 'var(--green)' : 'var(--red)';
+        const bg  = up ? 'rgba(0,200,150,.1)' : 'rgba(255,92,92,.1)';
+        const ico = up ? '▲' : '▼';
+
+        // Badge da moeda
+        const flags = {USD:'🇺🇸',EUR:'🇪🇺',GBP:'🇬🇧',ARS:'🇦🇷',JPY:'🇯🇵',CAD:'🇨🇦',CHF:'🇨🇭',CNY:'🇨🇳',AUD:'🇦🇺',MXN:'🇲🇽'};
+        const flag = flags[n.moeda] || '💱';
+
+        return `<div style="display:flex;align-items:flex-start;gap:12px;padding:13px 14px;${isLast?'':'border-bottom:1px solid var(--border)'}">
+          <div style="width:42px;height:42px;border-radius:11px;background:${bg};border:1px solid ${col};display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0;gap:1px">
+            <span style="font-size:18px;line-height:1">${flag}</span>
+            <span style="font-size:8px;font-weight:700;color:${col}">${ico}</span>
+          </div>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:2px">${n.title||'Alerta '+n.moeda}</div>
+            <div style="font-size:11.5px;color:var(--muted2);margin-bottom:4px">${n.body||''}</div>
+            <div style="font-size:10px;color:var(--muted)">${timeStr}</div>
+          </div>
+          <div style="font-family:'DM Mono',monospace;font-size:13px;font-weight:700;color:${col};flex-shrink:0;text-align:right">
+            R$ ${n.rateNow ? Number(n.rateNow).toLocaleString('pt-BR',{minimumFractionDigits:4,maximumFractionDigits:4}) : ''}
+          </div>
+        </div>`;
+      }).join('') + `</div>`;
+  };
+
+  // Inicializa badge com notifs não lidas
+  (function initBadge(){
+    const h = getHistory();
+    const unseen = h.filter(n=>!n.read).length;
+    if(unseen > 0){
+      const badge = document.getElementById('notif-badge');
+      if(badge) badge.classList.add('on');
+    }
+  })();
+
+})();
+</script>
+
 <!-- ── SERVICE WORKER — ALERTAS EM BACKGROUND ── -->
 <script>
 (function(){
@@ -3029,16 +3180,20 @@ tr+tr td{border-top:1px solid #f3f3f3}
   // Recebe disparos do SW (app estava minimizado)
   navigator.serviceWorker.addEventListener('message', e => {
     if(e.data?.type === 'ALERTS_TRIGGERED'){
-      // Atualiza localStorage com o que o SW disparou
       localStorage.setItem('_fin_alerts', JSON.stringify(e.data.allAlerts || []));
-      // Recarga os alertas na tela
       if(window._reloadAlertsFromStorage) window._reloadAlertsFromStorage();
       e.data.triggered?.forEach(a => {
-        if(window.showToast) showToast(`🔔 ${a.moeda} ${a.cond==='acima'?'▲':'▼'} R$ ${a.valor.toFixed(2)} — cotação atingida`);
+        const ico = a.cond==='acima'?'▲':'▼';
+        const title = `Alerta ${a.moeda} ${ico} R$ ${a.valor.toFixed(2)}`;
+        const body  = `Cotação atual: R$ ${Number(a.rateNow).toLocaleString('pt-BR',{minimumFractionDigits:4,maximumFractionDigits:4})}`;
+        if(window.addNotifHistory) window.addNotifHistory({
+          title, body, moeda:a.moeda, cond:a.cond,
+          valor:a.valor, rateNow:a.rateNow, time:Date.now()
+        });
+        if(window.showToast) showToast(`🔔 ${title}`);
       });
     }
     if(e.data?.type === 'CHECK_NOW'){
-      // SW pediu pra página checar (app está aberto)
       if(window.loadCotacoes) loadCotacoes(true);
     }
   });
