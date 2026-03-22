@@ -724,14 +724,15 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
   <div style="display:flex;gap:6px;overflow-x:auto;padding:0 0 10px;margin-bottom:4px" class="cat-scroll">
     <button class="news-src-btn on" data-src="all" onclick="filterNewsSource('all')">🌐 Todas</button>
     <button class="news-src-btn" data-src="infomoney" onclick="filterNewsSource('infomoney')">💹 InfoMoney</button>
-    <button class="news-src-btn" data-src="valor" onclick="filterNewsSource('valor')">📊 Valor</button>
     <button class="news-src-btn" data-src="uol" onclick="filterNewsSource('uol')">💰 UOL</button>
-    <button class="news-src-btn" data-src="reuters" onclick="filterNewsSource('reuters')">🌎 Reuters</button>
+    <button class="news-src-btn" data-src="positivo" onclick="filterNewsSource('positivo')">✅ Positivo</button>
+    <button class="news-src-btn" data-src="negativo" onclick="filterNewsSource('negativo')">⚠️ Negativo</button>
+    <button class="news-src-btn" data-src="neutro" onclick="filterNewsSource('neutro')">➖ Neutro</button>
   </div>
 
   <!-- Conteúdo -->
   <div id="news-list">
-    <div id="news-loading" style="text-align:center;padding:40px 16px;color:var(--muted)">
+    <div style="text-align:center;padding:40px 16px;color:var(--muted)">
       <div style="font-size:36px;margin-bottom:10px;opacity:.3">📰</div>
       <div style="font-size:13px">Carregando notícias...</div>
     </div>
@@ -3662,11 +3663,6 @@ tr+tr td{border-top:1px solid #f3f3f3}
     updateTab('tab-plan',   'nav.plan');
     updateTab('tab-cfg',    'nav.cfg');
 
-    // 4. Planejar sub-tabs — preserve emoji
-    setText(sid('psub-metas'),  `🎯 ${t('plan.goals')}`);
-    setText(sid('psub-regra'),  `⚖️ ${t('plan.budget')}`);
-    setText(sid('psub-cambio'), `💱 ${t('plan.cambio')}`);
-
     // 5. Relatório períodos
     setText(sid('rpb-month'), t('report.period.month'));
     setText(sid('rpb-3m'),    t('report.period.3m'));
@@ -3903,14 +3899,11 @@ tr+tr td{border-top:1px solid #f3f3f3}
 <script>
 (function(){
 
-  // Proxies CORS em cascata — tenta o próximo se o atual falhar
   const PROXIES = [
     url => `https://corsproxy.io/?url=${encodeURIComponent(url)}`,
-    url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
     url => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
   ];
 
-  // RSS feeds que não bloqueiam proxies
   const SOURCES = {
     infomoney: {
       label: 'InfoMoney',
@@ -3918,94 +3911,113 @@ tr+tr td{border-top:1px solid #f3f3f3}
       flag: '💹',
       url: 'https://www.infomoney.com.br/feed/'
     },
-    valor: {
-      label: 'Valor Econômico',
-      color: 'var(--blue)',
-      flag: '📊',
-      url: 'https://valor.globo.com/rss/home'
-    },
     uol: {
       label: 'UOL Economia',
       color: 'var(--amber)',
       flag: '💰',
       url: 'https://rss.uol.com.br/feed/economia.xml'
-    },
-    reuters: {
-      label: 'Reuters Brasil',
-      color: 'var(--purple)',
-      flag: '🌎',
-      url: 'https://feeds.reuters.com/reuters/BReconomicsNews'
     }
   };
 
-  let _allNews = [];
-  let _activeSource = 'all';
-  let _loaded = false;
-  let _loading = false;
+  const IMPACT_STYLE = {
+    positivo: { color: 'var(--green)',  bg: 'rgba(0,200,150,.1)',  border: 'rgba(0,200,150,.25)',  icon: '✅' },
+    negativo: { color: 'var(--red)',    bg: 'rgba(255,92,92,.1)',  border: 'rgba(255,92,92,.25)',   icon: '⚠️' },
+    neutro:   { color: 'var(--muted2)', bg: 'var(--s2)',           border: 'var(--border)',         icon: '➖' },
+  };
 
-  function timeAgo(dateStr) {
-    const d = new Date(dateStr);
-    if(isNaN(d)) return '';
-    const diff = Math.floor((Date.now() - d) / 1000);
-    if(diff < 60) return 'agora';
-    if(diff < 3600) return `${Math.floor(diff/60)}min atrás`;
+  let _allNews   = [];   // { src, title, link, description, pubDate, impact }
+  let _activeSource = 'all';
+  let _loaded    = false;
+  let _loading   = false;
+  let _analyzing = false;
+
+  // ── helpers ──────────────────────────────────────────
+  function timeAgo(d) {
+    const diff = Math.floor((Date.now() - new Date(d)) / 1000);
+    if(isNaN(diff)||diff<0) return '';
+    if(diff < 60)    return 'agora';
+    if(diff < 3600)  return `${Math.floor(diff/60)}min atrás`;
     if(diff < 86400) return `${Math.floor(diff/3600)}h atrás`;
     return `${Math.floor(diff/86400)}d atrás`;
   }
 
-  function parseRSS(xmlText) {
+  function parseRSS(xml) {
     try {
-      const parser = new DOMParser();
-      const xml = parser.parseFromString(xmlText, 'text/xml');
-      const items = Array.from(xml.querySelectorAll('item'));
-      return items.map(item => {
-        const get = tag => item.querySelector(tag)?.textContent?.trim() || '';
-        const desc = get('description').replace(/<[^>]+>/g,'').trim();
+      const doc = new DOMParser().parseFromString(xml, 'text/xml');
+      return Array.from(doc.querySelectorAll('item')).map(item => {
+        const g = tag => item.querySelector(tag)?.textContent?.trim() || '';
         return {
-          title: get('title'),
-          link: get('link') || item.querySelector('link')?.getAttribute('href') || '#',
-          description: desc,
-          pubDate: get('pubDate')
+          title: g('title'),
+          link:  g('link') || '#',
+          description: g('description').replace(/<[^>]+>/g,'').slice(0,200).trim(),
+          pubDate: g('pubDate')
         };
       }).filter(i => i.title);
     } catch(e) { return []; }
   }
 
-  async function fetchWithProxy(url, proxyIdx = 0) {
-    if(proxyIdx >= PROXIES.length) return null;
+  async function fetchProxy(url, idx=0) {
+    if(idx >= PROXIES.length) return null;
     try {
-      const proxyUrl = PROXIES[proxyIdx](url);
-      const res = await fetch(proxyUrl, { signal: AbortSignal.timeout(8000) });
+      const res = await fetch(PROXIES[idx](url), { signal: AbortSignal.timeout(9000) });
       if(!res.ok) throw new Error(res.status);
-      const text = await res.text();
-      if(!text || text.length < 100) throw new Error('empty');
-      return text;
-    } catch(e) {
-      return fetchWithProxy(url, proxyIdx + 1);
-    }
+      const txt = await res.text();
+      if(!txt || txt.length < 200) throw new Error('empty');
+      return txt;
+    } catch(e) { return fetchProxy(url, idx+1); }
   }
 
   async function fetchSource(key) {
-    const src = SOURCES[key];
-    const xml = await fetchWithProxy(src.url);
+    const xml = await fetchProxy(SOURCES[key].url);
     if(!xml) return [];
-    return parseRSS(xml).slice(0, 12).map(item => ({
-      src: key,
-      ...item
-    }));
+    return parseRSS(xml).slice(0, 10).map(item => ({ src: key, ...item, impact: null }));
   }
 
+  // ── Claude API — analisa UMA notícia ─────────────────
+  async function analyzeNews(news) {
+    const prompt = `Você é um especialista financeiro brasileiro. Analise esta notícia e responda SOMENTE em JSON válido, sem markdown.
+
+Notícia: "${news.title}"
+${news.description ? `Contexto: "${news.description}"` : ''}
+
+Responda exatamente neste formato JSON:
+{
+  "impacto": "positivo" | "negativo" | "neutro",
+  "area": "texto curto ex: Inflação, Juros, Câmbio, Emprego, Investimentos, Consumo",
+  "resumo": "1 frase simples explicando o que aconteceu",
+  "para_voce": "1 frase direta: o que isso muda na vida do brasileiro comum"
+}`;
+
+    try {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 300,
+          messages: [{ role: 'user', content: prompt }]
+        })
+      });
+      const data = await res.json();
+      const text = data.content?.[0]?.text || '{}';
+      const clean = text.replace(/```json|```/g,'').trim();
+      return JSON.parse(clean);
+    } catch(e) { return null; }
+  }
+
+  // ── render ────────────────────────────────────────────
   function renderNewsList() {
     const list = document.getElementById('news-list');
     if(!list) return;
 
-    const filtered = _activeSource === 'all'
-      ? _allNews
-      : _allNews.filter(n => n.src === _activeSource);
+    let filtered = _activeSource === 'all' ? _allNews
+      : ['positivo','negativo','neutro'].includes(_activeSource)
+        ? _allNews.filter(n => n.impact?.impacto === _activeSource)
+        : _allNews.filter(n => n.src === _activeSource);
 
     if(!filtered.length) {
       list.innerHTML = `<div style="text-align:center;padding:40px 16px;color:var(--muted)">
-        <div style="font-size:36px;margin-bottom:10px;opacity:.3">📰</div>
+        <div style="font-size:32px;margin-bottom:8px;opacity:.3">📰</div>
         <div style="font-size:13px">Nenhuma notícia encontrada.</div>
       </div>`;
       return;
@@ -4013,19 +4025,50 @@ tr+tr td{border-top:1px solid #f3f3f3}
 
     list.innerHTML = filtered.map(n => {
       const src = SOURCES[n.src];
-      const desc = n.description.slice(0, 120).trim();
-      return `<a class="news-card" href="${n.link}" target="_blank" rel="noopener">
-        <div class="news-card-source" style="color:${src.color}">${src.flag} ${src.label}</div>
-        <div class="news-card-title">${n.title}</div>
-        ${desc.length > 15 ? `<div class="news-card-desc">${desc}…</div>` : ''}
-        <div class="news-card-footer">
-          <span>${timeAgo(n.pubDate)}</span>
-          <span class="news-tag">↗ Abrir</span>
+      const imp = n.impact;
+      const st  = imp ? IMPACT_STYLE[imp.impacto] || IMPACT_STYLE.neutro : null;
+
+      return `<div class="news-card" onclick="window.open('${n.link}','_blank')">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:7px">
+          <div class="news-card-source" style="color:${src.color}">${src.flag} ${src.label}</div>
+          <span style="font-size:10px;color:var(--muted)">${timeAgo(n.pubDate)}</span>
         </div>
-      </a>`;
+        <div class="news-card-title">${n.title}</div>
+
+        ${imp ? `
+        <div style="margin-top:10px;padding:10px 12px;border-radius:10px;background:${st.bg};border:1px solid ${st.border}">
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:5px">
+            <span style="font-size:13px">${st.icon}</span>
+            <span style="font-size:10px;font-weight:700;color:${st.color};text-transform:uppercase;letter-spacing:.5px">${imp.impacto} · ${imp.area}</span>
+          </div>
+          <div style="font-size:12px;color:var(--text);line-height:1.5;margin-bottom:5px">${imp.resumo}</div>
+          <div style="font-size:11.5px;color:var(--muted2);line-height:1.4">👤 <b>Para você:</b> ${imp.para_voce}</div>
+        </div>` : `
+        <div style="margin-top:8px;padding:8px 12px;border-radius:8px;background:var(--s2);border:1px solid var(--border);display:flex;align-items:center;gap:7px">
+          <span style="font-size:11px;opacity:.4;animation:pulse-green 1.2s infinite">🤖</span>
+          <span style="font-size:11px;color:var(--muted)">Analisando impacto...</span>
+        </div>`}
+
+        <div style="margin-top:8px;text-align:right">
+          <span class="news-tag">↗ Abrir notícia</span>
+        </div>
+      </div>`;
     }).join('');
   }
 
+  // ── analisa todas em background ───────────────────────
+  async function analyzeAll() {
+    if(_analyzing) return;
+    _analyzing = true;
+    for(let i = 0; i < _allNews.length; i++) {
+      if(_allNews[i].impact) continue;
+      _allNews[i].impact = await analyzeNews(_allNews[i]);
+      renderNewsList(); // atualiza card a card conforme chega
+    }
+    _analyzing = false;
+  }
+
+  // ── carga principal ───────────────────────────────────
   window.loadNews = async function(force) {
     if(_loaded && !force) { renderNewsList(); return; }
     if(_loading) return;
@@ -4037,43 +4080,40 @@ tr+tr td{border-top:1px solid #f3f3f3}
       <div style="font-size:13px">Carregando notícias...</div>
     </div>`;
 
-    const keys = Object.keys(SOURCES);
-    const results = await Promise.allSettled(keys.map(k => fetchSource(k)));
-
+    const results = await Promise.allSettled(Object.keys(SOURCES).map(k => fetchSource(k)));
     _allNews = [];
     results.forEach(r => { if(r.status === 'fulfilled') _allNews.push(...r.value); });
 
-    // Remove duplicatas por título
+    // deduplica
     const seen = new Set();
     _allNews = _allNews.filter(n => {
-      const k = n.title.slice(0, 40).toLowerCase();
+      const k = n.title.slice(0,40).toLowerCase();
       if(seen.has(k)) return false;
       seen.add(k); return true;
     });
+    _allNews.sort((a,b) => new Date(b.pubDate)-new Date(a.pubDate));
 
-    // Ordena por data
-    _allNews.sort((a, b) => new Date(b.pubDate) - new Date(a.pubDate));
-
-    _loaded = true;
+    _loaded  = true;
     _loading = false;
 
     if(!_allNews.length) {
       list.innerHTML = `<div style="text-align:center;padding:40px 16px;color:var(--muted)">
         <div style="font-size:36px;margin-bottom:10px;opacity:.3">⚠️</div>
-        <div style="font-size:13px;line-height:1.6">Não foi possível carregar notícias.<br><span style="font-size:11px">Verifique sua conexão.</span></div>
+        <div style="font-size:13px;line-height:1.6">Não foi possível carregar.<br><span style="font-size:11px">Verifique sua conexão.</span></div>
         <button onclick="window.loadNews(true)" style="margin-top:14px;padding:8px 20px;border-radius:99px;border:1px solid var(--border2);background:none;color:var(--muted2);font-family:'DM Sans',sans-serif;font-size:12px;cursor:pointer">🔄 Tentar novamente</button>
       </div>`;
       return;
     }
 
     renderNewsList();
+    analyzeAll(); // inicia análise em background
   };
 
   window.filterNewsSource = function(src) {
     _activeSource = src;
-    document.querySelectorAll('.news-src-btn').forEach(btn => {
-      btn.classList.toggle('on', btn.dataset.src === src);
-    });
+    document.querySelectorAll('.news-src-btn').forEach(btn =>
+      btn.classList.toggle('on', btn.dataset.src === src)
+    );
     renderNewsList();
   };
 
