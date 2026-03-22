@@ -723,10 +723,10 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
   <!-- Filtros de fonte -->
   <div style="display:flex;gap:6px;overflow-x:auto;padding:0 0 10px;margin-bottom:4px" class="cat-scroll">
     <button class="news-src-btn on" data-src="all" onclick="filterNewsSource('all')">🌐 Todas</button>
-    <button class="news-src-btn" data-src="economia" onclick="filterNewsSource('economia')">📈 Economia</button>
-    <button class="news-src-btn" data-src="mercado" onclick="filterNewsSource('mercado')">💹 Mercado</button>
-    <button class="news-src-btn" data-src="juros" onclick="filterNewsSource('juros')">🏦 Banco Central</button>
-    <button class="news-src-btn" data-src="negocios" onclick="filterNewsSource('negocios')">💼 Negócios</button>
+    <button class="news-src-btn" data-src="infomoney" onclick="filterNewsSource('infomoney')">💹 InfoMoney</button>
+    <button class="news-src-btn" data-src="valor" onclick="filterNewsSource('valor')">📊 Valor</button>
+    <button class="news-src-btn" data-src="uol" onclick="filterNewsSource('uol')">💰 UOL</button>
+    <button class="news-src-btn" data-src="reuters" onclick="filterNewsSource('reuters')">🌎 Reuters</button>
   </div>
 
   <!-- Conteúdo -->
@@ -4201,33 +4201,39 @@ tr+tr td{border-top:1px solid #f3f3f3}
 <!-- ── NOVIDADES (NEWS) ── -->
 <script>
 (function(){
-  // Google News RSS (nativo, gratuito, sem API key) convertido via rss2json
-  const RSS2JSON = 'https://api.rss2json.com/v1/api.json?rss_url=';
 
+  // Proxies CORS em cascata — tenta o próximo se o atual falhar
+  const PROXIES = [
+    url => `https://corsproxy.io/?url=${encodeURIComponent(url)}`,
+    url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+    url => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
+  ];
+
+  // RSS feeds que não bloqueiam proxies
   const SOURCES = {
-    economia: {
-      label: 'Economia',
+    infomoney: {
+      label: 'InfoMoney',
       color: 'var(--green)',
-      flag: '📈',
-      url: 'https://news.google.com/rss/search?q=economia+brasil&hl=pt-BR&gl=BR&ceid=BR:pt-419'
-    },
-    mercado: {
-      label: 'Mercado',
-      color: 'var(--blue)',
       flag: '💹',
-      url: 'https://news.google.com/rss/search?q=bolsa+dolar+mercado+financeiro&hl=pt-BR&gl=BR&ceid=BR:pt-419'
+      url: 'https://www.infomoney.com.br/feed/'
     },
-    juros: {
-      label: 'Banco Central',
+    valor: {
+      label: 'Valor Econômico',
+      color: 'var(--blue)',
+      flag: '📊',
+      url: 'https://valor.globo.com/rss/home'
+    },
+    uol: {
+      label: 'UOL Economia',
       color: 'var(--amber)',
-      flag: '🏦',
-      url: 'https://news.google.com/rss/search?q=banco+central+selic+juros+inflacao&hl=pt-BR&gl=BR&ceid=BR:pt-419'
+      flag: '💰',
+      url: 'https://rss.uol.com.br/feed/economia.xml'
     },
-    negocios: {
-      label: 'Negócios',
+    reuters: {
+      label: 'Reuters Brasil',
       color: 'var(--purple)',
-      flag: '💼',
-      url: 'https://news.google.com/rss/search?q=negocios+empresas+brasil&hl=pt-BR&gl=BR&ceid=BR:pt-419'
+      flag: '🌎',
+      url: 'https://feeds.reuters.com/reuters/BReconomicsNews'
     }
   };
 
@@ -4246,10 +4252,46 @@ tr+tr td{border-top:1px solid #f3f3f3}
     return `${Math.floor(diff/86400)}d atrás`;
   }
 
-  function stripHtml(html) {
-    const tmp = document.createElement('div');
-    tmp.innerHTML = html || '';
-    return (tmp.textContent || tmp.innerText || '').replace(/\s+/g,' ').trim();
+  function parseRSS(xmlText) {
+    try {
+      const parser = new DOMParser();
+      const xml = parser.parseFromString(xmlText, 'text/xml');
+      const items = Array.from(xml.querySelectorAll('item'));
+      return items.map(item => {
+        const get = tag => item.querySelector(tag)?.textContent?.trim() || '';
+        const desc = get('description').replace(/<[^>]+>/g,'').trim();
+        return {
+          title: get('title'),
+          link: get('link') || item.querySelector('link')?.getAttribute('href') || '#',
+          description: desc,
+          pubDate: get('pubDate')
+        };
+      }).filter(i => i.title);
+    } catch(e) { return []; }
+  }
+
+  async function fetchWithProxy(url, proxyIdx = 0) {
+    if(proxyIdx >= PROXIES.length) return null;
+    try {
+      const proxyUrl = PROXIES[proxyIdx](url);
+      const res = await fetch(proxyUrl, { signal: AbortSignal.timeout(8000) });
+      if(!res.ok) throw new Error(res.status);
+      const text = await res.text();
+      if(!text || text.length < 100) throw new Error('empty');
+      return text;
+    } catch(e) {
+      return fetchWithProxy(url, proxyIdx + 1);
+    }
+  }
+
+  async function fetchSource(key) {
+    const src = SOURCES[key];
+    const xml = await fetchWithProxy(src.url);
+    if(!xml) return [];
+    return parseRSS(xml).slice(0, 12).map(item => ({
+      src: key,
+      ...item
+    }));
   }
 
   function renderNewsList() {
@@ -4270,42 +4312,17 @@ tr+tr td{border-top:1px solid #f3f3f3}
 
     list.innerHTML = filtered.map(n => {
       const src = SOURCES[n.src];
-      const desc = stripHtml(n.description).slice(0,120).trim();
-      // Extrai fonte original do título (Google News coloca "- Fonte" no final)
-      const titleParts = n.title.split(' - ');
-      const srcName = titleParts.length > 1 ? titleParts.pop().trim() : '';
-      const cleanTitle = titleParts.join(' - ');
+      const desc = n.description.slice(0, 120).trim();
       return `<a class="news-card" href="${n.link}" target="_blank" rel="noopener">
-        <div class="news-card-source" style="color:${src.color}">${src.flag} ${src.label}${srcName ? ` <span style="color:var(--muted);font-weight:400">· ${srcName}</span>` : ''}</div>
-        <div class="news-card-title">${cleanTitle}</div>
-        ${desc && desc.length > 20 ? `<div class="news-card-desc">${desc}…</div>` : ''}
+        <div class="news-card-source" style="color:${src.color}">${src.flag} ${src.label}</div>
+        <div class="news-card-title">${n.title}</div>
+        ${desc.length > 15 ? `<div class="news-card-desc">${desc}…</div>` : ''}
         <div class="news-card-footer">
           <span>${timeAgo(n.pubDate)}</span>
           <span class="news-tag">↗ Abrir</span>
         </div>
       </a>`;
     }).join('');
-  }
-
-  async function fetchSource(key) {
-    const src = SOURCES[key];
-    try {
-      const res = await fetch(`${RSS2JSON}${encodeURIComponent(src.url)}&count=12`);
-      if(!res.ok) throw new Error(res.status);
-      const data = await res.json();
-      if(data.status === 'ok' && data.items) {
-        return data.items.map(item => ({
-          src: key,
-          title: item.title || '',
-          description: item.description || item.content || '',
-          link: item.link || '#',
-          pubDate: item.pubDate || ''
-        }));
-      }
-    } catch(e) {
-      console.warn('News fetch error:', key, e);
-    }
-    return [];
   }
 
   window.loadNews = async function(force) {
@@ -4325,25 +4342,24 @@ tr+tr td{border-top:1px solid #f3f3f3}
     _allNews = [];
     results.forEach(r => { if(r.status === 'fulfilled') _allNews.push(...r.value); });
 
-    // Remove duplicatas por título similar
+    // Remove duplicatas por título
     const seen = new Set();
     _allNews = _allNews.filter(n => {
-      const key = n.title.slice(0,40).toLowerCase();
-      if(seen.has(key)) return false;
-      seen.add(key);
-      return true;
+      const k = n.title.slice(0, 40).toLowerCase();
+      if(seen.has(k)) return false;
+      seen.add(k); return true;
     });
 
-    // Ordena por data desc
-    _allNews.sort((a,b) => new Date(b.pubDate) - new Date(a.pubDate));
+    // Ordena por data
+    _allNews.sort((a, b) => new Date(b.pubDate) - new Date(a.pubDate));
 
     _loaded = true;
     _loading = false;
 
-    if(!_allNews.length && list) {
+    if(!_allNews.length) {
       list.innerHTML = `<div style="text-align:center;padding:40px 16px;color:var(--muted)">
         <div style="font-size:36px;margin-bottom:10px;opacity:.3">⚠️</div>
-        <div style="font-size:13px">Não foi possível carregar notícias.<br><span style="font-size:11px">Verifique sua conexão e tente novamente.</span></div>
+        <div style="font-size:13px;line-height:1.6">Não foi possível carregar notícias.<br><span style="font-size:11px">Verifique sua conexão.</span></div>
         <button onclick="window.loadNews(true)" style="margin-top:14px;padding:8px 20px;border-radius:99px;border:1px solid var(--border2);background:none;color:var(--muted2);font-family:'DM Sans',sans-serif;font-size:12px;cursor:pointer">🔄 Tentar novamente</button>
       </div>`;
       return;
