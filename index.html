@@ -4277,13 +4277,14 @@ Formato exato (sem nada fora do JSON):
       const src = SOURCES[n.src];
       const imp = n.impact;
       const st  = imp ? IMPACT_STYLE[imp.impacto] || IMPACT_STYLE.neutro : null;
+      const linkEsc = n.link.replace(/'/g,"\\'");
 
-      return `<div class="news-card" onclick="window.open('${n.link}','_blank')">
+      return `<div class="news-card">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:7px">
           <div class="news-card-source" style="color:${src.color}">${src.flag} ${src.label}</div>
           <span style="font-size:10px;color:var(--muted)">${timeAgo(n.pubDate)}</span>
         </div>
-        <div class="news-card-title">${n.title}</div>
+        <div class="news-card-title" onclick="window.open('${linkEsc}','_blank')" style="cursor:pointer">${n.title}</div>
 
         ${imp ? `
         <div style="margin-top:10px;padding:10px 12px;border-radius:10px;background:${st.bg};border:1px solid ${st.border}">
@@ -4303,7 +4304,7 @@ Formato exato (sem nada fora do JSON):
           <div style="flex:1;min-width:0">
             <div style="font-size:11.5px;font-weight:700;color:var(--blue);margin-bottom:3px">Análise de impacto com IA</div>
             <div style="font-size:11px;color:var(--muted2);line-height:1.5">Veja como cada notícia afeta o seu bolso.</div>
-            <button data-puter-onboard="1" style="margin-top:7px;padding:5px 14px;border-radius:99px;border:none;background:var(--blue);color:#fff;font-size:11px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer">✨ Saiba como funciona</button>
+            <button onclick="window.abrirOnboardingPuter()" style="margin-top:7px;padding:5px 14px;border-radius:99px;border:none;background:var(--blue);color:#fff;font-size:11px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer">✨ Saiba como funciona</button>
           </div>
         </div>`}
         ${ _puterLowBalance ? `
@@ -4316,7 +4317,7 @@ Formato exato (sem nada fora do JSON):
         </div>` : ''}
 
         <div style="margin-top:8px;text-align:right">
-          <span class="news-tag">↗ Abrir notícia</span>
+          <span class="news-tag" onclick="window.open('${linkEsc}','_blank')" style="cursor:pointer">↗ Abrir notícia</span>
         </div>
       </div>`;
     }).join('');
@@ -4352,15 +4353,6 @@ Formato exato (sem nada fora do JSON):
     document.getElementById('puter-onboarding-overlay').classList.add('open');
     document.getElementById('puter-onboarding-sheet').classList.add('open');
   };
-
-  // Delegação de evento — captura clique no botão mesmo dentro de innerHTML
-  document.addEventListener('click', function(e) {
-    if(e.target.closest('[data-puter-onboard]')) {
-      e.stopPropagation();
-      e.preventDefault();
-      window.abrirOnboardingPuter();
-    }
-  }, true); // capture=true garante que roda antes do onclick do card
 
   window.fecharOnboardingPuter = function() {
     document.getElementById('puter-onboarding-overlay').classList.remove('open');
