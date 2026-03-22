@@ -879,15 +879,15 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
 
   <!-- Filtros: horizontal scroll no mobile, sidebar no desktop -->
   <div id="news-filters-sidebar" style="display:flex;gap:6px;overflow-x:auto;padding:0 0 10px;margin-bottom:4px" class="cat-scroll">
-    <button class="news-src-btn on" data-src="all"         onclick="filterNewsSource('all')">🌐 Todas</button>
-    <button class="news-src-btn" data-src="im_ultimas"    onclick="filterNewsSource('im_ultimas')">💹 Últimas</button>
-    <button class="news-src-btn" data-src="im_mercados"   onclick="filterNewsSource('im_mercados')">📊 Mercados</button>
-    <button class="news-src-btn" data-src="im_investir"   onclick="filterNewsSource('im_investir')">💰 Investir</button>
-    <button class="news-src-btn" data-src="uol"           onclick="filterNewsSource('uol')">🔶 UOL</button>
+    <button class="news-src-btn on" data-src="all"       onclick="filterNewsSource('all')">🌐 Todas</button>
+    <button class="news-src-btn" data-src="agbrasil"     onclick="filterNewsSource('agbrasil')">🏛️ Ag. Brasil</button>
+    <button class="news-src-btn" data-src="agbrasil2"    onclick="filterNewsSource('agbrasil2')">📰 Geral</button>
+    <button class="news-src-btn" data-src="poder360"     onclick="filterNewsSource('poder360')">📊 Poder360</button>
+    <button class="news-src-btn" data-src="reuters"      onclick="filterNewsSource('reuters')">🌎 Reuters</button>
     <hr style="border:none;border-top:1px solid var(--border);margin:4px 0;display:none" class="news-sidebar-divider">
-    <button class="news-src-btn" data-src="positivo"      onclick="filterNewsSource('positivo')">✅ Positivo</button>
-    <button class="news-src-btn" data-src="negativo"      onclick="filterNewsSource('negativo')">⚠️ Negativo</button>
-    <button class="news-src-btn" data-src="neutro"        onclick="filterNewsSource('neutro')">➖ Neutro</button>
+    <button class="news-src-btn" data-src="positivo"     onclick="filterNewsSource('positivo')">✅ Positivo</button>
+    <button class="news-src-btn" data-src="negativo"     onclick="filterNewsSource('negativo')">⚠️ Negativo</button>
+    <button class="news-src-btn" data-src="neutro"       onclick="filterNewsSource('neutro')">➖ Neutro</button>
   </div>
 
   <!-- Conteúdo -->
@@ -4063,12 +4063,12 @@ tr+tr td{border-top:1px solid #f3f3f3}
   // rss2json converte RSS em JSON — sem problemas de CORS
   const RSS2JSON = 'https://api.rss2json.com/v1/api.json?rss_url=';
 
-  // Feeds confiáveis que funcionam com rss2json
+  // Fontes que não bloqueiam rss2json (públicas/governamentais/internacionais)
   const SOURCES = {
-    im_ultimas:  { label: 'InfoMoney · Últimas',       color: 'var(--green)',  flag: '💹', url: 'https://www.infomoney.com.br/feed/' },
-    im_mercados: { label: 'InfoMoney · Mercados',      color: 'var(--green)',  flag: '📊', url: 'https://www.infomoney.com.br/mercados/feed/' },
-    im_investir: { label: 'InfoMoney · Investimentos', color: 'var(--green)',  flag: '💰', url: 'https://www.infomoney.com.br/onde-investir/feed/' },
-    uol:         { label: 'UOL Economia',              color: 'var(--amber)', flag: '🔶', url: 'https://rss.uol.com.br/feed/economia.xml' },
+    agbrasil:  { label: 'Agência Brasil',   color: 'var(--blue)',   flag: '🏛️', url: 'https://agenciabrasil.ebc.com.br/economia/feed' },
+    agbrasil2: { label: 'Ag. Brasil · Geral', color: 'var(--blue)', flag: '📰', url: 'https://agenciabrasil.ebc.com.br/feed' },
+    poder360:  { label: 'Poder360',          color: 'var(--purple)',flag: '📊', url: 'https://www.poder360.com.br/poder-economia/feed/' },
+    reuters:   { label: 'Reuters Brasil',    color: 'var(--amber)', flag: '🌎', url: 'https://feeds.reuters.com/reuters/BReconomicsNews' },
   };
 
   const IMPACT_STYLE = {
