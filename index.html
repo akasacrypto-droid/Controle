@@ -501,6 +501,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
 
   </div><!-- fim reportpage-ai -->
 
+</div><!-- fim page-report -->
 
 <!-- ── PAGE: PLANEJAR ── -->
 <div class="page" id="page-plan">
@@ -4268,8 +4269,9 @@ Formato exato (sem nada fora do JSON):
   // Checa silenciosamente se já está logado (sem popup)
   async function checkPuterSession() {
     try {
-      const logged = await puter.auth.isSignedIn();
-      if(logged) {
+      // Tenta uma chamada leve pra ver se já está autenticado
+      const user = await puter.auth.getUser().catch(() => null);
+      if(user) {
         _puterReady = true;
         renderNewsList();
         analyzeAll();
@@ -4429,12 +4431,24 @@ Formato exato (sem nada fora do JSON):
   }
 
   // ── Roda a análise com Puter ─────────────────────────
+  let _aiRunning = false;
+
   window.runAIAnalysis = async function() {
+    if(_aiRunning) return;
+    _aiRunning = true;
+
     const ctx = buildSpendingContext();
 
-    document.getElementById('ai-analysis-idle').style.display    = 'none';
-    document.getElementById('ai-analysis-loading').style.display = 'block';
-    document.getElementById('ai-analysis-result').style.display  = 'none';
+    // Limpa erro anterior e mostra loading
+    const idle    = document.getElementById('ai-analysis-idle');
+    const loading = document.getElementById('ai-analysis-loading');
+    const result  = document.getElementById('ai-analysis-result');
+    const errEl   = document.getElementById('ai-error-msg');
+    if(errEl) errEl.remove();
+
+    idle.style.display    = 'none';
+    loading.style.display = 'block';
+    result.style.display  = 'none';
 
     const setStep = txt => {
       const el = document.getElementById('ai-loading-step');
@@ -4442,38 +4456,31 @@ Formato exato (sem nada fora do JSON):
     };
 
     try {
-      // Login Puter se necessário
       setStep('Conectando com a IA...');
-      const logged = await puter.auth.isSignedIn().catch(() => false);
-      if(!logged) await puter.auth.signIn();
-
-      setStep('Analisando padrões de gasto...');
-
+      // Tenta direto sem checar isSignedIn (evita WebSocket error)
       const noData = !ctx;
       const prompt = noData
-        ? `Você é um consultor financeiro brasileiro. O usuário ainda não tem lançamentos cadastrados. Dê 5 dicas gerais e práticas de controle financeiro para brasileiros, com exemplos concretos e valores reais. Responda em HTML simples (use <h3>, <p>, <ul>, <li>, <b>, <span>). Sem markdown.`
-        : `Você é um consultor financeiro pessoal brasileiro. Analise os dados reais do usuário e responda em HTML simples (use <h3>, <p>, <ul>, <li>, <b>, <span style="color:#FF5C5C"> para alertas e <span style="color:#00C896"> para pontos positivos). Sem markdown, sem blocos de código.
+        ? `Você é um consultor financeiro brasileiro. O usuário ainda não tem lançamentos cadastrados. Dê 5 dicas práticas de controle financeiro para brasileiros com exemplos e valores reais. Responda em HTML simples (h3, p, ul, li, b). Sem markdown.`
+        : `Você é um consultor financeiro pessoal brasileiro. Analise os dados e responda APENAS em HTML simples (h3, p, ul, li, b, use style="color:#FF5C5C" para alertas e style="color:#00C896" para positivos). Sem markdown, sem bloco de código.
 
 DADOS DO USUÁRIO (últimos 3 meses):
 ${ctx}
 
-Faça uma análise completa com estas seções:
-1. 📊 Resumo do perfil financeiro (receita média, gasto médio, taxa de poupança)
-2. 🔴 Alertas — gastos que merecem atenção (com valores reais)
-3. ✅ Pontos positivos — o que está indo bem
-4. 💡 Top 5 ações concretas para economizar (com estimativa de quanto pode economizar em R$)
-5. 🎯 Meta sugerida para o próximo mês (valor específico baseado nos dados)
+Inclua obrigatoriamente:
+1. 📊 Resumo do perfil (receita média, gasto médio, taxa de poupança %)
+2. 🔴 Alertas com os valores reais do usuário
+3. ✅ O que está indo bem
+4. 💡 Top 5 ações para economizar com valor estimado em R$
+5. 🎯 Meta concreta para o próximo mês baseada nos dados`;
 
-Seja específico, use os valores reais do usuário, evite conselhos genéricos.`;
-
-      setStep('Gerando recomendações personalizadas...');
+      setStep('Analisando seus gastos...');
       const response = await puter.ai.chat(prompt);
       const html = response?.message?.content?.[0]?.text || response?.text || String(response);
 
-      document.getElementById('ai-analysis-loading').style.display = 'none';
-      document.getElementById('ai-analysis-result').style.display  = 'block';
-      document.getElementById('ai-analysis-result').innerHTML = `
-        <div style="background:var(--s1);border:1px solid var(--border);border-radius:16px;padding:18px 20px;margin-bottom:12px;line-height:1.7;font-size:13.5px;color:var(--text)">
+      loading.style.display = 'none';
+      result.style.display  = 'block';
+      result.innerHTML = `
+        <div style="background:var(--s1);border:1px solid var(--border);border-radius:16px;padding:18px 20px;margin-bottom:12px;line-height:1.8;font-size:13.5px;color:var(--text)">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--border)">
             <div style="display:flex;align-items:center;gap:8px">
               <span style="font-size:20px">🤖</span>
@@ -4485,14 +4492,17 @@ Seja específico, use os valores reais do usuário, evite conselhos genéricos.`
         </div>`;
 
     } catch(e) {
-      document.getElementById('ai-analysis-loading').style.display = 'none';
-      document.getElementById('ai-analysis-idle').style.display    = 'block';
-      if(e?.message !== 'User cancelled') {
-        document.getElementById('ai-analysis-idle').innerHTML += `
-          <div style="background:rgba(255,92,92,.1);border:1px solid rgba(255,92,92,.2);border-radius:10px;padding:10px 14px;font-size:12px;color:var(--red);margin-top:8px">
-            ❌ Erro ao conectar. Tente novamente.
-          </div>`;
+      loading.style.display = 'none';
+      idle.style.display    = 'block';
+      if(!e?.message?.includes('cancel') && !e?.message?.includes('Cancel')) {
+        const div = document.createElement('div');
+        div.id = 'ai-error-msg';
+        div.style.cssText = 'background:rgba(255,92,92,.1);border:1px solid rgba(255,92,92,.2);border-radius:10px;padding:10px 14px;font-size:12px;color:#FF5C5C;margin-top:8px';
+        div.textContent = '❌ Erro ao conectar. Verifique sua conta Puter e tente novamente.';
+        idle.appendChild(div);
       }
+    } finally {
+      _aiRunning = false;
     }
   };
 
