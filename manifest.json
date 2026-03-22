@@ -1,19 +1,33 @@
 {
   "name": "Controle+",
   "short_name": "Controle+",
-  "description": "Controle financeiro pessoal com alertas de câmbio",
-  "start_url": "/financeiro/",
-  "scope": "/financeiro/",
+  "description": "Controle financeiro pessoal com câmbio, crypto e análise AI",
+  "start_url": "./",
   "display": "standalone",
   "background_color": "#0E1117",
   "theme_color": "#0E1117",
-  "orientation": "portrait",
+  "orientation": "portrait-primary",
   "icons": [
     {
       "src": "icon.svg",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any maskable"
+    },
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
     }
-  ]
+  ],
+  "categories": ["finance", "productivity"],
+  "lang": "pt-BR",
+  "dir": "ltr"
 }
