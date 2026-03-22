@@ -3175,7 +3175,7 @@ tr+tr td{border-top:1px solid #f3f3f3}
     }
 
     try {
-      let valuesBRL, labels, highsBRL, lowsBRL;
+      let valuesBRL, labels, highsBRL, lowsBRL, rawData = null;
 
       if(isCrypto){
         const cgId = CRYPTO_IDS[code];
@@ -3196,15 +3196,14 @@ tr+tr td{border-top:1px solid #f3f3f3}
             : `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}`;
         });
       } else if(days <= 1) {
-        // Intraday: AwesomeAPI retorna pontos do dia atual
         const res = await fetch(`https://economia.awesomeapi.com.br/json/daily/${code}-BRL/1`);
         const data = await res.json();
         if(!Array.isArray(data) || !data.length) throw new Error('sem dados');
-        const sorted = [...data].sort((a,b) => Number(a.timestamp) - Number(b.timestamp));
-        valuesBRL = sorted.map(d => parseFloat(d.bid));
-        highsBRL  = sorted.map(d => parseFloat(d.high));
-        lowsBRL   = sorted.map(d => parseFloat(d.low));
-        labels = sorted.map(d => {
+        rawData = [...data].sort((a,b) => Number(a.timestamp) - Number(b.timestamp));
+        valuesBRL = rawData.map(d => parseFloat(d.bid));
+        highsBRL  = rawData.map(d => parseFloat(d.high));
+        lowsBRL   = rawData.map(d => parseFloat(d.low));
+        labels = rawData.map(d => {
           const dt = new Date(Number(d.timestamp) * 1000);
           return `${String(dt.getHours()).padStart(2,'0')}:${String(dt.getMinutes()).padStart(2,'0')}`;
         });
@@ -3212,11 +3211,11 @@ tr+tr td{border-top:1px solid #f3f3f3}
         const res = await fetch(`https://economia.awesomeapi.com.br/json/daily/${code}-BRL/${days}`);
         const data = await res.json();
         if(!Array.isArray(data) || !data.length) throw new Error('sem dados');
-        const sorted = [...data].sort((a,b) => Number(a.timestamp) - Number(b.timestamp));
-        valuesBRL = sorted.map(d => parseFloat(d.bid));
-        highsBRL  = sorted.map(d => parseFloat(d.high));
-        lowsBRL   = sorted.map(d => parseFloat(d.low));
-        labels = sorted.map(d => {
+        rawData = [...data].sort((a,b) => Number(a.timestamp) - Number(b.timestamp));
+        valuesBRL = rawData.map(d => parseFloat(d.bid));
+        highsBRL  = rawData.map(d => parseFloat(d.high));
+        lowsBRL   = rawData.map(d => parseFloat(d.low));
+        labels = rawData.map(d => {
           const dt = new Date(Number(d.timestamp) * 1000);
           return `${String(dt.getDate()).padStart(2,'0')}/${String(dt.getMonth()+1).padStart(2,'0')}`;
         });
@@ -3258,18 +3257,27 @@ tr+tr td{border-top:1px solid #f3f3f3}
       if(_moedaChartInst) _moedaChartInst.destroy();
       const ctx = canvas.getContext('2d');
 
-      if(_candleMode && highsBRL !== valuesBRL) {
-        // ── CANDLESTICK usando plugin customizado ──
-        // Agrupa dados em candles OHLC
-        const step = Math.max(1, Math.floor(values.length / 30));
+      if(_candleMode && rawData && rawData.length > 1) {
+        // ── CANDLESTICK com dados OHLC reais da AwesomeAPI ──
+        const rawCandles = rawData.map((d, i) => ({
+          x: labels[i],
+          o: toBase(parseFloat(i === 0 ? d.bid : rawData[i-1].bid)),
+          h: toBase(parseFloat(d.high)),
+          l: toBase(parseFloat(d.low)),
+          c: toBase(parseFloat(d.bid)),
+        }));
+        // Agrupa para máx 40 candles visíveis
+        const step = Math.max(1, Math.floor(rawCandles.length / 40));
         const candles = [];
-        for(let i = 0; i < values.length; i += step) {
-          const chunk = values.slice(i, i + step);
-          const hChunk = highs.slice(i, i + step);
-          const lChunk = lows.slice(i, i + step);
-          const o = chunk[0], c = chunk[chunk.length-1];
-          const h = Math.max(...hChunk), l = Math.min(...lChunk);
-          candles.push({ x: labels[i], o, h, l, c });
+        for(let i = 0; i < rawCandles.length; i += step) {
+          const grp = rawCandles.slice(i, i + step);
+          candles.push({
+            x: grp[0].x,
+            o: grp[0].o,
+            h: Math.max(...grp.map(d => d.h)),
+            l: Math.min(...grp.map(d => d.l)),
+            c: grp[grp.length-1].c,
+          });
         }
 
         const candlePlugin = {
