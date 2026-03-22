@@ -2664,8 +2664,9 @@ tr+tr td{border-top:1px solid #f3f3f3}
     {id:'polkadot',     code:'DOT', name:'Polkadot',  ico:'⚪', color:'#E6007A'},
   ];
 
-  let cryptoRatesInBRL = {}; // code → preço em BRL
-  let cryptoChange24h  = {}; // code → variação %
+  let cryptoRatesInBRL = {};
+  let cryptoChange24h  = {};
+  let cryptoImages     = {}; // code → image URL
   let lastCryptoFetch  = 0;
   let cryptoLoaded     = false;
 
@@ -2680,6 +2681,7 @@ tr+tr td{border-top:1px solid #f3f3f3}
         if(found){
           cryptoRatesInBRL[found.code] = c.current_price;
           cryptoChange24h[found.code]  = c.price_change_percentage_24h;
+          cryptoImages[found.code]     = c.image; // URL do ícone oficial
         }
       });
       lastCryptoFetch = Date.now();
@@ -2733,8 +2735,10 @@ tr+tr td{border-top:1px solid #f3f3f3}
         <div onclick="openMoedaSheet('${c.code}')"
              style="display:flex;align-items:center;gap:12px;padding:12px 14px;${isLast?'':'border-bottom:1px solid var(--border)'};cursor:pointer;transition:background .12s"
              ontouchstart="this.style.background='var(--s2)'" ontouchend="this.style.background=''">
-          <div style="width:40px;height:40px;border-radius:11px;background:${c.color}22;border:1px solid ${c.color}44;display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0;gap:1px">
-            <span style="font-size:16px;line-height:1;color:${c.color};font-weight:700">${c.ico}</span>
+          <div style="width:40px;height:40px;border-radius:11px;background:${c.color}22;border:1px solid ${c.color}44;display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden;gap:1px">
+            ${cryptoImages[c.code]
+              ? `<img src="${cryptoImages[c.code]}" style="width:26px;height:26px;object-fit:contain" onerror="this.style.display='none';this.nextSibling.style.display='block'"/><span style="display:none;font-size:16px;color:${c.color};font-weight:700">${c.ico}</span>`
+              : `<span style="font-size:16px;line-height:1;color:${c.color};font-weight:700">${c.ico}</span>`}
             <span style="font-size:8px;font-weight:700;color:${c.color};letter-spacing:.3px">${c.code}</span>
           </div>
           <div style="flex:1;min-width:0">
@@ -2808,10 +2812,11 @@ tr+tr td{border-top:1px solid #f3f3f3}
   }, 60000);
 
   // Expõe para uso externo
-  window._fetchCrypto = fetchCrypto;
+  window._fetchCrypto      = fetchCrypto;
   window._renderCryptoGrid = renderCryptoGrid;
   window._cryptoRatesInBRL = () => cryptoRatesInBRL;
   window._cryptoChange24h  = () => cryptoChange24h;
+  window._cryptoImages     = () => cryptoImages;
 })();
 </script>
 
@@ -3040,21 +3045,48 @@ tr+tr td{border-top:1px solid #f3f3f3}
     const codeEl  = document.getElementById('msheet-code');
 
     if(isCrypto){
-      // Garante que as taxas crypto estão carregadas
       if(window._fetchCrypto) await window._fetchCrypto(false);
 
       const cm = CRYPTO_META[code] || {ico:'₿', color:'#F7931A'};
+      const imgUrl = window._cryptoImages?.()?.[code];
+
       flagEl.style.background   = cm.color+'22';
       flagEl.style.borderColor  = cm.color+'55';
-      flagIco.style.color       = cm.color;
-      flagIco.style.fontSize    = '20px';
-      flagIco.textContent       = cm.ico;
-      codeEl.style.color        = cm.color;
+      flagEl.style.overflow     = 'hidden';
+
+      if(imgUrl){
+        flagIco.style.cssText = `width:28px;height:28px;object-fit:contain`;
+        // Troca o span por img dinamicamente
+        const img = document.createElement('img');
+        img.src = imgUrl;
+        img.style.cssText = 'width:28px;height:28px;object-fit:contain;display:block';
+        img.onerror = ()=>{ img.style.display='none'; flagIco.textContent=cm.ico; };
+        flagEl.innerHTML = '';
+        flagEl.appendChild(img);
+        const codeSpan = document.createElement('span');
+        codeSpan.id = 'msheet-code';
+        codeSpan.style.cssText = `font-size:8px;font-weight:700;color:${cm.color}`;
+        codeSpan.textContent = code;
+        flagEl.appendChild(codeSpan);
+      } else {
+        flagIco.style.color    = cm.color;
+        flagIco.style.fontSize = '20px';
+        flagIco.textContent    = cm.ico;
+        codeEl.style.color     = cm.color;
+        codeEl.textContent     = code;
+      }
       const cnames = {BTC:'Bitcoin',ETH:'Ethereum',BNB:'BNB',SOL:'Solana',XRP:'XRP',ADA:'Cardano',DOGE:'Dogecoin',DOT:'Polkadot'};
       document.getElementById('msheet-name').textContent = cnames[code]||code;
       const price = window._cryptoRatesInBRL?.()?.[code];
+      const base2 = document.getElementById('conv-de')?.value || 'BRL';
+      const baseRate2 = ratesInBRL[base2] || 1;
+      const priceInBase = base2 === 'BRL' ? price : price / baseRate2;
+      const sym2 = base2 === 'BRL' ? 'R$' : base2;
+      const priceStr2 = priceInBase >= 1000
+        ? priceInBase.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})
+        : priceInBase.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:4});
       document.getElementById('msheet-rate').textContent = price
-        ? `R$ ${price.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})} por 1 ${code}` : '—';
+        ? `${sym2} ${priceStr2} por 1 ${code}` : '—';
       const pct = window._cryptoChange24h?.()?.[code];
       const varEl = document.getElementById('msheet-var');
       if(pct != null){
@@ -3074,7 +3106,12 @@ tr+tr td{border-top:1px solid #f3f3f3}
       codeEl.style.color        = 'var(--muted)';
       document.getElementById('msheet-name').textContent = m.name;
       const rate = ratesInBRL[code];
-      document.getElementById('msheet-rate').textContent = rate ? `R$ ${fmtVal(rate,'BRL')} por 1 ${code}` : '—';
+      const base3 = document.getElementById('conv-de')?.value || 'BRL';
+      const baseRate3 = ratesInBRL[base3] || 1;
+      const rateInBase = rate ? (base3 === 'BRL' ? rate : rate / baseRate3) : null;
+      const sym3 = base3 === 'BRL' ? 'R$' : base3;
+      document.getElementById('msheet-rate').textContent = rateInBase
+        ? `${sym3} ${fmtVal(rateInBase, base3)} por 1 ${code}` : '—';
       const pct = getVar(code);
       const varEl = document.getElementById('msheet-var');
       if(pct !== null){
@@ -3110,50 +3147,76 @@ tr+tr td{border-top:1px solid #f3f3f3}
     loadEl.textContent = 'Carregando...';
     canvas.style.opacity = '0';
 
+    // Moeda base selecionada no conversor
+    const base = document.getElementById('conv-de')?.value || 'BRL';
+    const baseRateInBRL = ratesInBRL[base] || 1; // quanto BRL = 1 base
+    const sym  = base === 'BRL' ? 'R$' : base;
+    const isCrypto = !!CRYPTO_IDS[code];
+
+    // Converte valor de BRL para a base escolhida
+    function toBase(brlVal){ return base === 'BRL' ? brlVal : brlVal / baseRateInBRL; }
+
+    // Formata valor no símbolo correto
+    function fmtBase(v){
+      if(v == null || isNaN(v)) return '—';
+      const abs = Math.abs(v);
+      const dec = abs >= 10000 ? 2 : abs >= 1 ? 4 : 6;
+      return `${sym} ${v.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:dec})}`;
+    }
+    function fmtAxis(v){
+      const abs = Math.abs(v);
+      const str = abs >= 10000
+        ? v.toLocaleString('pt-BR',{maximumFractionDigits:0})
+        : v.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+      return `${sym} ${str}`;
+    }
+
     try {
-      let values, labels, highs, lows;
-      const isCrypto = !!CRYPTO_IDS[code];
+      let valuesBRL, labels, highsBRL, lowsBRL;
 
       if(isCrypto){
-        // CoinGecko market_chart — prices em BRL
         const cgId = CRYPTO_IDS[code];
-        const res = await fetch(`https://api.coingecko.com/api/v3/coins/${cgId}/market_chart?vs_currency=brl&days=${days}&interval=${days<=7?'hourly':'daily'}`);
+        const interval = days <= 7 ? 'hourly' : 'daily';
+        const res = await fetch(`https://api.coingecko.com/api/v3/coins/${cgId}/market_chart?vs_currency=brl&days=${days}&interval=${interval}`);
         const data = await res.json();
         if(!data.prices?.length) throw new Error('sem dados');
-        // Reduz pontos para não sobrecarregar
         const step = Math.max(1, Math.floor(data.prices.length / 60));
-        const pts = data.prices.filter((_,i)=>i%step===0);
-        values = pts.map(p=>p[1]);
-        labels = pts.map(p=>{
+        const pts = data.prices.filter((_,i) => i % step === 0);
+        valuesBRL = pts.map(p => p[1]);
+        highsBRL  = valuesBRL;
+        lowsBRL   = valuesBRL;
+        labels = pts.map(p => {
           const d = new Date(p[0]);
-          return days<=7 ? `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}h`
-                         : `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}`;
+          return days <= 7
+            ? `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}h`
+            : `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}`;
         });
-        highs = values; lows = values;
       } else {
-        // AwesomeAPI — fiat
         const res = await fetch(`https://economia.awesomeapi.com.br/json/daily/${code}-BRL/${days}`);
         const data = await res.json();
-        if(!Array.isArray(data)||!data.length) throw new Error('sem dados');
-        const sorted = [...data].sort((a,b)=>Number(a.timestamp)-Number(b.timestamp));
-        values = sorted.map(d=>parseFloat(d.bid));
-        highs  = sorted.map(d=>parseFloat(d.high));
-        lows   = sorted.map(d=>parseFloat(d.low));
-        labels = sorted.map(d=>{
-          const dt = new Date(Number(d.timestamp)*1000);
+        if(!Array.isArray(data) || !data.length) throw new Error('sem dados');
+        const sorted = [...data].sort((a,b) => Number(a.timestamp) - Number(b.timestamp));
+        valuesBRL = sorted.map(d => parseFloat(d.bid));
+        highsBRL  = sorted.map(d => parseFloat(d.high));
+        lowsBRL   = sorted.map(d => parseFloat(d.low));
+        labels = sorted.map(d => {
+          const dt = new Date(Number(d.timestamp) * 1000);
           return `${String(dt.getDate()).padStart(2,'0')}/${String(dt.getMonth()+1).padStart(2,'0')}`;
         });
       }
 
-      const min = Math.min(...(lows||values));
-      const max = Math.max(...(highs||values));
-      const avg = values.reduce((a,b)=>a+b,0)/values.length;
-      const fmtPrice = v => v >= 1000 ? v.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})
-                                       : v.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:4});
+      // Converte todos os valores para a moeda base
+      const values = valuesBRL.map(toBase);
+      const highs  = highsBRL.map(toBase);
+      const lows   = lowsBRL.map(toBase);
 
-      document.getElementById('msheet-min').textContent = `R$ ${fmtPrice(min)}`;
-      document.getElementById('msheet-avg').textContent = `R$ ${fmtPrice(avg)}`;
-      document.getElementById('msheet-max').textContent = `R$ ${fmtPrice(max)}`;
+      const min = Math.min(...lows);
+      const max = Math.max(...highs);
+      const avg = values.reduce((a,b) => a+b, 0) / values.length;
+
+      document.getElementById('msheet-min').textContent = fmtBase(min);
+      document.getElementById('msheet-avg').textContent = fmtBase(avg);
+      document.getElementById('msheet-max').textContent = fmtBase(max);
 
       const isUp = values[values.length-1] >= values[0];
       const lineColor = isCrypto ? (CRYPTO_META[code]?.color||'#00C896') : (isUp?'#00C896':'#FF5C5C');
@@ -3164,15 +3227,15 @@ tr+tr td{border-top:1px solid #f3f3f3}
       _moedaChartInst = new Chart(ctx, {
         type:'line',
         data:{labels, datasets:[{
-          data:values, borderColor:lineColor, borderWidth:2,
-          backgroundColor:fillColor, fill:true, tension:0.4,
-          pointRadius:0, pointHoverRadius:4, pointHoverBackgroundColor:lineColor,
+          data: values, borderColor: lineColor, borderWidth: 2,
+          backgroundColor: fillColor, fill: true, tension: 0.4,
+          pointRadius: 0, pointHoverRadius: 4, pointHoverBackgroundColor: lineColor,
         }]},
         options:{
           responsive:true, maintainAspectRatio:false, animation:{duration:400},
           plugins:{legend:{display:false}, tooltip:{
             mode:'index', intersect:false,
-            callbacks:{label: c=>`R$ ${fmtPrice(c.parsed.y)}`},
+            callbacks:{label: c => fmtBase(c.parsed.y)},
             backgroundColor:'rgba(22,27,39,.95)',
             borderColor:'rgba(255,255,255,.1)', borderWidth:1,
             titleColor:'#9AA0BA', bodyColor:'#EEF0FF', padding:10, cornerRadius:8,
@@ -3182,7 +3245,7 @@ tr+tr td{border-top:1px solid #f3f3f3}
                ticks:{color:'#6B738F', font:{size:9}, maxTicksLimit:6, maxRotation:0}},
             y:{position:'right', grid:{color:'rgba(255,255,255,.04)'}, border:{display:false},
                ticks:{color:'#6B738F', font:{size:9}, maxTicksLimit:4,
-                 callback: v=>`R$${v>=1000?v.toLocaleString('pt-BR',{maximumFractionDigits:0}):v.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}`}}
+                 callback: v => fmtAxis(v)}}
           }
         }
       });
