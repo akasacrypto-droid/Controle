@@ -312,55 +312,23 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
 @media(min-width:900px){
   body{max-width:1100px;margin:0 auto}
   .fab{right:calc((100vw - 1100px)/2 + 16px)}
-
-  /* Nav tabs maiores */
-  .nav-tab{font-size:12px;padding:12px 10px 10px;gap:4px}
+  .nav-tab{font-size:12px;padding:12px 10px 10px}
   .nav-tab .tab-ico{font-size:20px}
-
-  /* Topbar */
   .topbar{padding:calc(var(--st)+14px) 28px 14px}
-  #month-label{font-size:12px;min-width:90px}
-
-  /* Todas as páginas ocupam a largura total */
   .page{padding:20px 28px calc(var(--sb) + 80px)}
 
-  /* ── RELATÓRIO: 2 colunas ── */
-  #page-report{
-    display:grid;
-    grid-template-columns:1fr 1fr;
-    gap:0 20px;
-    align-items:start;
+  /* Todas as páginas: coluna centralizada confortável */
+  #page-report,#page-txs,#page-plan,#page-cfg,#page-notif{
+    max-width:780px;margin-left:auto;margin-right:auto;
   }
-  #page-report #pdf-header,
-  #page-report > div:first-of-type, /* hero */
-  #page-report > div:nth-of-type(2) /* filtro período */{
-    grid-column:1/-1;
-  }
-  /* hero span full width */
-  #page-report > [style*="linear-gradient(135deg,#1a1030"]{grid-column:1/-1}
-  /* filtro período span full */
-  #page-report > [style*="overflow-x:auto"]{grid-column:1/-1}
-  /* métricas 4 colunas */
-  .metrics{grid-template-columns:repeat(4,1fr);grid-column:1/-1}
-  /* banner comparação full */
-  .comp-banner{grid-column:1/-1}
-  /* cards side by side já são grid */
 
-  /* ── EXTRATOS: lista centralizada e mais larga ── */
-  #page-txs{max-width:800px;margin-left:auto;margin-right:auto}
+  /* Métricas em 4 colunas */
+  .metrics{grid-template-columns:repeat(4,1fr)}
+  .plan-sub-tab{font-size:13px;padding:9px 24px}
   .tx-item{padding:14px 18px;gap:14px}
-  .tx-desc{font-size:14px}
-  .tx-amt{font-size:14px}
   .cat-chip{font-size:12px;padding:7px 14px}
 
-  /* ── PLANEJAR: centralizado ── */
-  #page-plan{max-width:800px;margin-left:auto;margin-right:auto}
-  .plan-sub-tab{font-size:13px;padding:9px 24px}
-
-  /* ── CONFIG: centralizado ── */
-  #page-cfg,#page-notif{max-width:680px;margin-left:auto;margin-right:auto}
-
-  /* ── NOVIDADES: sidebar + grid ── */
+  /* News: sidebar + grid */
   #page-news.on{
     display:grid;
     grid-template-columns:190px 1fr;
@@ -384,9 +352,9 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
   .news-sidebar-divider{display:block!important}
 }
 @media(min-width:1200px){
-  body{max-width:1300px}
-  .fab{right:calc((100vw - 1300px)/2 + 20px)}
-  #page-txs,#page-plan{max-width:900px}
+  body{max-width:1280px}
+  .fab{right:calc((100vw - 1280px)/2 + 20px)}
+  #page-report,#page-txs,#page-plan{max-width:900px}
   #page-news.on #news-list{column-count:3}
 }
 </style>
@@ -4162,7 +4130,7 @@ Formato exato (sem nada fora do JSON):
 {"impacto":"positivo"|"negativo"|"neutro","area":"Inflação|Juros|Câmbio|Emprego|Combustível|Investimentos|Energia|Alimentação|Crédito","resumo":"1 frase clara do que aconteceu","para_voce":"1 frase específica e direta do impacto real no bolso"}`;
 
     try {
-      const response = await puter.ai.chat(prompt, { model: 'claude-haiku-4-5' });
+      const response = await puter.ai.chat(prompt);
       const text = response?.message?.content?.[0]?.text || response?.text || String(response);
       const clean = text.replace(/```json|```/g,'').trim();
       const start = clean.indexOf('{');
