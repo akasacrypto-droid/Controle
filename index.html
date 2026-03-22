@@ -4032,10 +4032,18 @@ Formato exato:
           </div>
           <div style="font-size:12px;color:var(--text);line-height:1.5;margin-bottom:5px">${imp.resumo}</div>
           <div style="font-size:11.5px;color:var(--muted2);line-height:1.4">👤 <b>Para você:</b> ${imp.para_voce}</div>
-        </div>` : `
+        </div>` : _puterReady ? `
         <div style="margin-top:8px;padding:8px 12px;border-radius:8px;background:var(--s2);border:1px solid var(--border);display:flex;align-items:center;gap:7px">
           <span style="font-size:11px;opacity:.5;animation:pulse-green 1.2s infinite">🤖</span>
           <span style="font-size:11px;color:var(--muted)">Analisando impacto...</span>
+        </div>` : `
+        <div style="margin-top:10px;padding:10px 13px;border-radius:10px;background:rgba(91,158,255,.07);border:1px solid rgba(91,158,255,.2);display:flex;align-items:center;gap:10px">
+          <span style="font-size:20px;flex-shrink:0">🤖</span>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:11.5px;font-weight:700;color:var(--blue);margin-bottom:3px">Análise de impacto com IA</div>
+            <div style="font-size:11px;color:var(--muted2);line-height:1.5">Veja como cada notícia afeta o seu bolso.<br>Requer conta gratuita no <b>Puter.com</b>.</div>
+            <button onclick="event.stopPropagation();ativarPuter()" style="margin-top:7px;padding:5px 14px;border-radius:99px;border:none;background:var(--blue);color:#fff;font-size:11px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer">✨ Ativar análise grátis</button>
+          </div>
         </div>`}
 
         <div style="margin-top:8px;text-align:right">
@@ -4046,7 +4054,7 @@ Formato exato:
   }
 
   async function analyzeAll() {
-    if(_analyzing) return;
+    if(_analyzing || !_puterReady) return;
     _analyzing = true;
     for(let i = 0; i < _allNews.length; i++) {
       if(_allNews[i].impact) continue;
@@ -4054,6 +4062,33 @@ Formato exato:
       renderNewsList();
     }
     _analyzing = false;
+  }
+
+  // ── Puter login ───────────────────────────────────────
+  let _puterReady = false;
+
+  window.ativarPuter = async function() {
+    try {
+      // Força login/signup no Puter — abre popup
+      await puter.auth.signIn();
+      _puterReady = true;
+      renderNewsList();
+      analyzeAll();
+    } catch(e) {
+      // usuário fechou o popup sem logar
+    }
+  };
+
+  // Checa silenciosamente se já está logado (sem popup)
+  async function checkPuterSession() {
+    try {
+      const logged = await puter.auth.isSignedIn();
+      if(logged) {
+        _puterReady = true;
+        renderNewsList();
+        analyzeAll();
+      }
+    } catch(e) {}
   }
 
   window.loadNews = async function(force) {
@@ -4092,7 +4127,7 @@ Formato exato:
     }
 
     renderNewsList();
-    analyzeAll();
+    checkPuterSession(); // verifica sessão silenciosamente; se logado, analisa automaticamente
   };
 
   window.filterNewsSource = function(src) {
