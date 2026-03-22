@@ -310,8 +310,38 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
   .nav-tab .tab-ico{font-size:18px}
 }
 @media(min-width:900px){
-  body{max-width:480px;margin:0 auto}
-  .fab{right:calc((100vw - 480px)/2 + 16px)}
+  body{max-width:960px;margin:0 auto}
+  .fab{right:calc((100vw - 960px)/2 + 16px)}
+  /* Outras páginas continuam centralizadas em 480px */
+  #page-report,#page-txs,#page-plan,#page-cfg,#page-notif{max-width:480px;margin:0 auto}
+  /* News layout: só aplica quando a página estiver ativa */
+  #page-news.on{
+    display:grid;
+    grid-template-columns:200px 1fr;
+    grid-template-rows:auto 1fr;
+    gap:0 20px;
+    align-items:start;
+    max-width:100%;
+  }
+  #page-news.on #news-header-row{grid-column:1/-1}
+  #page-news.on #news-filters-sidebar{
+    grid-column:1;grid-row:2;
+    display:flex;flex-direction:column;
+    gap:4px;overflow-x:visible;padding:0;
+    position:sticky;top:12px;
+  }
+  #page-news.on #news-filters-sidebar .news-src-btn{
+    text-align:left;border-radius:10px;padding:8px 12px;
+    white-space:nowrap;width:100%;box-sizing:border-box;
+  }
+  #page-news.on #news-list{grid-column:2;grid-row:2;column-count:2;column-gap:12px}
+  #page-news.on #news-list .news-card{break-inside:avoid;display:inline-block;width:100%;margin-bottom:12px}
+  .news-sidebar-divider{display:block!important}
+}
+@media(min-width:1200px){
+  body{max-width:1200px}
+  .fab{right:calc((100vw - 1200px)/2 + 16px)}
+  #page-news.on #news-list{column-count:3}
 }
 </style>
 </head>
@@ -720,14 +750,14 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
 <!-- ── PAGE: NOVIDADES ── -->
 <div class="page" id="page-news">
 
-  <!-- Header -->
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+  <!-- Header (ocupa toda a largura) -->
+  <div id="news-header-row" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
     <div class="slbl" style="margin:0">📰 Notícias</div>
     <span id="news-last-updated" style="font-size:10px;color:var(--muted)"></span>
   </div>
 
-  <!-- Filtros de fonte -->
-  <div style="display:flex;gap:6px;overflow-x:auto;padding:0 0 10px;margin-bottom:4px" class="cat-scroll">
+  <!-- Filtros: horizontal scroll no mobile, sidebar no desktop -->
+  <div id="news-filters-sidebar" style="display:flex;gap:6px;overflow-x:auto;padding:0 0 10px;margin-bottom:4px" class="cat-scroll">
     <button class="news-src-btn on" data-src="all"         onclick="filterNewsSource('all')">🌐 Todas</button>
     <button class="news-src-btn" data-src="im_ultimas"    onclick="filterNewsSource('im_ultimas')">💹 Últimas</button>
     <button class="news-src-btn" data-src="im_economia"   onclick="filterNewsSource('im_economia')">📈 Economia</button>
@@ -736,6 +766,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
     <button class="news-src-btn" data-src="im_financas"   onclick="filterNewsSource('im_financas')">🏦 Finanças</button>
     <button class="news-src-btn" data-src="im_negocios"   onclick="filterNewsSource('im_negocios')">💼 Negócios</button>
     <button class="news-src-btn" data-src="uol"           onclick="filterNewsSource('uol')">🔶 UOL</button>
+    <hr style="border:none;border-top:1px solid var(--border);margin:4px 0;display:none" class="news-sidebar-divider">
     <button class="news-src-btn" data-src="positivo"      onclick="filterNewsSource('positivo')">✅ Positivo</button>
     <button class="news-src-btn" data-src="negativo"      onclick="filterNewsSource('negativo')">⚠️ Negativo</button>
     <button class="news-src-btn" data-src="neutro"        onclick="filterNewsSource('neutro')">➖ Neutro</button>
@@ -3914,6 +3945,8 @@ tr+tr td{border-top:1px solid #f3f3f3}
   const PROXIES = [
     url => `https://corsproxy.io/?url=${encodeURIComponent(url)}`,
     url => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
+    url => `https://thingproxy.freeboard.io/fetch/${url}`,
+    url => `https://cors-anywhere.herokuapp.com/${url}`,
   ];
 
   // Todos os feeds de finanças do InfoMoney + UOL
