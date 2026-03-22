@@ -3977,7 +3977,39 @@ tr+tr td{border-top:1px solid #f3f3f3}
   async function fetchSource(key) {
     const xml = await fetchProxy(SOURCES[key].url);
     if(!xml) return [];
-    return parseRSS(xml).slice(0, 10).map(item => ({ src: key, ...item, impact: null }));
+    return parseRSS(xml).slice(0, 10).map(item => ({
+      src: key, ...item,
+      impact: getCachedImpact(item.title) // carrega do cache imediatamente
+    }));
+  }
+
+  // ── Cache de análises no localStorage ────────────────
+  const CACHE_KEY = '_news_impact_cache';
+  const CACHE_MAX = 200; // máximo de notícias guardadas
+
+  function getCachedImpact(title) {
+    try {
+      const cache = JSON.parse(localStorage.getItem(CACHE_KEY) || '{}');
+      return cache[cacheKey(title)] || null;
+    } catch(e) { return null; }
+  }
+
+  function setCachedImpact(title, impact) {
+    try {
+      const cache = JSON.parse(localStorage.getItem(CACHE_KEY) || '{}');
+      cache[cacheKey(title)] = impact;
+      // limpa entradas mais antigas se passar do limite
+      const keys = Object.keys(cache);
+      if(keys.length > CACHE_MAX) {
+        keys.slice(0, keys.length - CACHE_MAX).forEach(k => delete cache[k]);
+      }
+      localStorage.setItem(CACHE_KEY, JSON.stringify(cache));
+    } catch(e) {}
+  }
+
+  function cacheKey(title) {
+    // chave normalizada do título
+    return title.toLowerCase().replace(/\s+/g,'_').slice(0, 60);
   }
 
   // ── Puter.js — sem CORS, sem API key, gratuito ────────
@@ -3997,7 +4029,9 @@ Formato exato:
       const start = clean.indexOf('{');
       const end   = clean.lastIndexOf('}');
       if(start === -1 || end === -1) return null;
-      return JSON.parse(clean.slice(start, end+1));
+      const impact = JSON.parse(clean.slice(start, end+1));
+      setCachedImpact(news.title, impact); // salva no cache
+      return impact;
     } catch(e) { return null; }
   }
 
@@ -4063,8 +4097,10 @@ Formato exato:
   async function analyzeAll() {
     if(_analyzing || !_puterReady) return;
     _analyzing = true;
+    const pending = _allNews.filter(n => !n.impact).length;
+    if(pending === 0) { _analyzing = false; return; } // tudo já cacheado
     for(let i = 0; i < _allNews.length; i++) {
-      if(_allNews[i].impact) continue;
+      if(_allNews[i].impact) continue; // já tem — pula
       _allNews[i].impact = await analyzeNews(_allNews[i]);
       renderNewsList();
     }
