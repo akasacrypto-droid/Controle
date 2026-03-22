@@ -4218,7 +4218,7 @@ tr+tr td{border-top:1px solid #f3f3f3}
   function buildTicker() {
     const track = document.getElementById('ticker-track');
     if(!track) return;
-    const rates  = window._getRatesInBRL?.()     || {};
+    const rates  = window._getRatesInBRL?.()     || window._tickerRatesOverride || {};
     const yest   = window._getRatesYestInBRL?.() || {};
     const crypto = window._cryptoRatesInBRL?.()  || {};
     const all    = {...rates, ...crypto};
@@ -4282,14 +4282,43 @@ tr+tr td{border-top:1px solid #f3f3f3}
     }
   });
 
+  // Busca cotações se ainda não foram carregadas
+  async function fetchTickerRates() {
+    try {
+      const MOEDAS = ['USD','EUR','GBP','JPY','CAD','CHF','ARS','CNY','AUD','MXN'];
+      const pairs = MOEDAS.map(m=>`${m}-BRL`).join(',');
+      const res = await fetch(`https://economia.awesomeapi.com.br/json/last/${pairs}`);
+      const data = await res.json();
+      const rates = { BRL: 1 };
+      MOEDAS.forEach(code => {
+        const key = `${code}BRL`;
+        if(data[key]) rates[code] = parseFloat(data[key].bid);
+      });
+      // Injeta nas rates globais se disponível
+      if(window._injectCryptoRates) {
+        // não é crypto mas aproveita o mecanismo
+      }
+      return rates;
+    } catch(e) { return null; }
+  }
+
   // Tenta até ter dados
   let tries = 0;
-  function tryBuild() {
-    const r = window._getRatesInBRL?.();
+  async function tryBuild() {
+    let r = window._getRatesInBRL?.();
+    if(!r || Object.keys(r).length <= 2) {
+      // Busca cotações independentemente
+      const fetched = await fetchTickerRates();
+      if(fetched) {
+        // Usa diretamente no ticker
+        window._tickerRatesOverride = fetched;
+        r = fetched;
+      }
+    }
     if(r && Object.keys(r).length > 2) buildTicker();
-    else if(tries++ < 30) setTimeout(tryBuild, 600);
+    else if(tries++ < 10) setTimeout(tryBuild, 1000);
   }
-  setTimeout(tryBuild, 800);
+  setTimeout(tryBuild, 1200);
 })();
 </script>
 
