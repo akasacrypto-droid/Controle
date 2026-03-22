@@ -705,6 +705,8 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
       <button class="rpt-period"    id="mper-90" onclick="setMoedaPeriod(90,this)">3M</button>
       <!-- Badge variação do período -->
       <div id="msheet-period-var" style="margin-left:auto;font-size:11px;font-weight:700;border-radius:7px;padding:4px 10px;display:none"></div>
+      <!-- Toggle Linha / Candle -->
+      <button id="mper-candle" onclick="toggleCandleMode()" style="margin-left:4px;padding:5px 10px;border-radius:7px;border:1px solid var(--border2);background:none;color:var(--muted);font-size:11px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;white-space:nowrap">📊 Candle</button>
     </div>
     <!-- Canvas gráfico -->
     <div style="position:relative;height:160px;margin-bottom:12px">
@@ -3015,6 +3017,19 @@ tr+tr td{border-top:1px solid #f3f3f3}
   window._moedaSheetCode = 'USD';
   window._moedaChartInst = null;
   window._moedaPeriod    = 1;
+  window._candleMode     = false;
+
+  window.toggleCandleMode = function() {
+    _candleMode = !_candleMode;
+    const btn = document.getElementById('mper-candle');
+    if(btn) {
+      btn.style.background  = _candleMode ? 'rgba(255,184,77,.12)' : 'none';
+      btn.style.borderColor = _candleMode ? 'rgba(255,184,77,.35)' : 'var(--border2)';
+      btn.style.color       = _candleMode ? 'var(--amber)' : 'var(--muted)';
+      btn.textContent       = _candleMode ? '📈 Linha' : '📊 Candle';
+    }
+    loadMoedaChart(_moedaSheetCode, _moedaPeriod);
+  };
 
   const CRYPTO_IDS = {BTC:'bitcoin',ETH:'ethereum',BNB:'binancecoin',SOL:'solana',XRP:'ripple',ADA:'cardano',DOGE:'dogecoin',DOT:'polkadot'};
   const CRYPTO_META = {BTC:{ico:'₿',color:'#F7931A'},ETH:{ico:'Ξ',color:'#627EEA'},BNB:{ico:'🟡',color:'#F3BA2F'},SOL:{ico:'◎',color:'#9945FF'},XRP:{ico:'✕',color:'#346AA9'},ADA:{ico:'🔵',color:'#0033AD'},DOGE:{ico:'🐕',color:'#C2A633'},DOT:{ico:'⚪',color:'#E6007A'}};
@@ -3242,31 +3257,119 @@ tr+tr td{border-top:1px solid #f3f3f3}
 
       if(_moedaChartInst) _moedaChartInst.destroy();
       const ctx = canvas.getContext('2d');
-      _moedaChartInst = new Chart(ctx, {
-        type:'line',
-        data:{labels, datasets:[{
-          data: values, borderColor: lineColor, borderWidth: 2,
-          backgroundColor: fillColor, fill: true, tension: 0.4,
-          pointRadius: 0, pointHoverRadius: 4, pointHoverBackgroundColor: lineColor,
-        }]},
-        options:{
-          responsive:true, maintainAspectRatio:false, animation:{duration:400},
-          plugins:{legend:{display:false}, tooltip:{
-            mode:'index', intersect:false,
-            callbacks:{label: c => fmtBase(c.parsed.y)},
-            backgroundColor:'rgba(22,27,39,.95)',
-            borderColor:'rgba(255,255,255,.1)', borderWidth:1,
-            titleColor:'#9AA0BA', bodyColor:'#EEF0FF', padding:10, cornerRadius:8,
-          }},
-          scales:{
-            x:{grid:{display:false}, border:{display:false},
-               ticks:{color:'#6B738F', font:{size:9}, maxTicksLimit:6, maxRotation:0}},
-            y:{position:'right', grid:{color:'rgba(255,255,255,.04)'}, border:{display:false},
-               ticks:{color:'#6B738F', font:{size:9}, maxTicksLimit:4,
-                 callback: v => fmtAxis(v)}}
-          }
+
+      if(_candleMode && highsBRL !== valuesBRL) {
+        // ── CANDLESTICK usando plugin customizado ──
+        // Agrupa dados em candles OHLC
+        const step = Math.max(1, Math.floor(values.length / 30));
+        const candles = [];
+        for(let i = 0; i < values.length; i += step) {
+          const chunk = values.slice(i, i + step);
+          const hChunk = highs.slice(i, i + step);
+          const lChunk = lows.slice(i, i + step);
+          const o = chunk[0], c = chunk[chunk.length-1];
+          const h = Math.max(...hChunk), l = Math.min(...lChunk);
+          candles.push({ x: labels[i], o, h, l, c });
         }
-      });
+
+        const candlePlugin = {
+          id: 'candlestick',
+          afterDatasetsDraw(chart) {
+            const {ctx, scales:{x, y}} = chart;
+            candles.forEach((d, i) => {
+              const xPos = x.getPixelForValue(i);
+              const yO = y.getPixelForValue(d.o);
+              const yC = y.getPixelForValue(d.c);
+              const yH = y.getPixelForValue(d.h);
+              const yL = y.getPixelForValue(d.l);
+              const bullish = d.c >= d.o;
+              const color = bullish ? '#00C896' : '#FF5C5C';
+              const w = Math.max(3, (x.width / candles.length) * 0.6);
+
+              ctx.save();
+              // Sombra (wick)
+              ctx.strokeStyle = color;
+              ctx.lineWidth = 1.5;
+              ctx.beginPath();
+              ctx.moveTo(xPos, yH);
+              ctx.lineTo(xPos, yL);
+              ctx.stroke();
+              // Corpo
+              ctx.fillStyle = bullish ? color : color;
+              ctx.strokeStyle = color;
+              ctx.lineWidth = 1;
+              const bodyTop = Math.min(yO, yC);
+              const bodyH = Math.max(2, Math.abs(yO - yC));
+              if(bullish) {
+                ctx.fillStyle = color;
+              } else {
+                ctx.fillStyle = color;
+              }
+              ctx.globalAlpha = bullish ? 0.9 : 0.8;
+              ctx.fillRect(xPos - w/2, bodyTop, w, bodyH);
+              ctx.globalAlpha = 1;
+              ctx.restore();
+            });
+          }
+        };
+
+        _moedaChartInst = new Chart(ctx, {
+          type: 'scatter',
+          data: { datasets: [{ data: candles.map((d,i) => ({x:i, y: d.c})), pointRadius: 0 }] },
+          options: {
+            responsive: true, maintainAspectRatio: false, animation: {duration:300},
+            plugins: { legend:{display:false}, tooltip:{
+              callbacks: {
+                title: items => candles[items[0]?.dataIndex]?.x || '',
+                label: items => {
+                  const d = candles[items.dataIndex];
+                  if(!d) return '';
+                  return [`O: ${fmtBase(d.o)}`, `H: ${fmtBase(d.h)}`, `L: ${fmtBase(d.l)}`, `C: ${fmtBase(d.c)}`];
+                }
+              },
+              backgroundColor:'rgba(22,27,39,.95)', borderColor:'rgba(255,255,255,.1)',
+              borderWidth:1, titleColor:'#9AA0BA', bodyColor:'#EEF0FF', padding:10, cornerRadius:8,
+            }},
+            scales: {
+              x: { type:'linear', min:0, max:candles.length-1,
+                   grid:{display:false}, border:{display:false},
+                   ticks:{ color:'#6B738F', font:{size:9}, maxTicksLimit:6,
+                     callback: v => candles[Math.round(v)]?.x || '' }},
+              y: { position:'right', grid:{color:'rgba(255,255,255,.04)'}, border:{display:false},
+                   ticks:{color:'#6B738F', font:{size:9}, maxTicksLimit:4, callback: v => fmtAxis(v)}}
+            }
+          },
+          plugins: [candlePlugin]
+        });
+
+      } else {
+        // ── LINHA (modo padrão) ──
+        _moedaChartInst = new Chart(ctx, {
+          type:'line',
+          data:{labels, datasets:[{
+            data: values, borderColor: lineColor, borderWidth: 2,
+            backgroundColor: fillColor, fill: true, tension: 0.4,
+            pointRadius: 0, pointHoverRadius: 4, pointHoverBackgroundColor: lineColor,
+          }]},
+          options:{
+            responsive:true, maintainAspectRatio:false, animation:{duration:400},
+            plugins:{legend:{display:false}, tooltip:{
+              mode:'index', intersect:false,
+              callbacks:{label: c => fmtBase(c.parsed.y)},
+              backgroundColor:'rgba(22,27,39,.95)',
+              borderColor:'rgba(255,255,255,.1)', borderWidth:1,
+              titleColor:'#9AA0BA', bodyColor:'#EEF0FF', padding:10, cornerRadius:8,
+            }},
+            scales:{
+              x:{grid:{display:false}, border:{display:false},
+                 ticks:{color:'#6B738F', font:{size:9}, maxTicksLimit:6, maxRotation:0}},
+              y:{position:'right', grid:{color:'rgba(255,255,255,.04)'}, border:{display:false},
+                 ticks:{color:'#6B738F', font:{size:9}, maxTicksLimit:4,
+                   callback: v => fmtAxis(v)}}
+            }
+          }
+        });
+      }
 
       loadEl.style.display = 'none';
       canvas.style.opacity = '1';
