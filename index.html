@@ -958,6 +958,24 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
     </div>
   </div>
 
+  <div class="slbl">📰 Novidades</div>
+  <div class="card" style="margin-bottom:12px">
+    <div style="padding:14px">
+      <div style="font-size:12.5px;font-weight:600;margin-bottom:4px">GNews API Key</div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:10px;line-height:1.5">
+        Necessária para carregar notícias. Gratuita em <b style="color:var(--blue)">gnews.io</b> (100/dia, sem cartão).
+      </div>
+      <div style="display:flex;gap:8px">
+        <input type="password" id="gnews-key-input" placeholder="Cole sua API key aqui"
+          style="flex:1;padding:11px 13px;background:var(--s2);border:1px solid var(--border2);border-radius:10px;color:var(--text);font-size:14px;font-family:'DM Mono',monospace;outline:none"
+          onfocus="this.style.borderColor='var(--blue)'" onblur="this.style.borderColor='var(--border2)'"
+          value=""/>
+        <button onclick="saveGNewsKey()" style="padding:11px 16px;background:var(--blue);border:none;border-radius:10px;color:#fff;font-size:13px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;white-space:nowrap">Salvar</button>
+      </div>
+      <div id="gnews-key-status" style="font-size:11px;margin-top:8px;color:var(--muted)"></div>
+    </div>
+  </div>
+
   <div class="slbl" data-i18n="cfg.backup">Backup</div>
   <div class="card" style="margin-bottom:12px">
     <div style="padding:12px 14px 10px;border-bottom:1px solid var(--border)">
@@ -4061,13 +4079,18 @@ tr+tr td{border-top:1px solid #f3f3f3}
 <script>
 (function(){
 
-  // Google News RSS — funciona direto no browser sem proxy
+  // GNews API — gratuita, CORS liberado, 100 req/dia
+  // Cadastro grátis em: https://gnews.io/  (sem cartao)
+  const GNEWS_BASE = 'https://gnews.io/api/v4/search';
+  function getGNewsKey(){ return localStorage.getItem('_gnews_key') || ''; }
+  function hasKey(){ return !!getGNewsKey(); }
+
   const SOURCES = {
-    economia: { label: 'Economia',        color: 'var(--green)',  flag: '📈', url: 'https://news.google.com/rss/search?q=economia+brasil+mercado+financeiro&hl=pt-BR&gl=BR&ceid=BR:pt-419' },
-    juros:    { label: 'Juros & Inflação', color: 'var(--red)',   flag: '🏦', url: 'https://news.google.com/rss/search?q=selic+juros+inflacao+ipca+banco+central&hl=pt-BR&gl=BR&ceid=BR:pt-419' },
-    bolsa:    { label: 'Bolsa & Câmbio',  color: 'var(--blue)',   flag: '📊', url: 'https://news.google.com/rss/search?q=bolsa+b3+dolar+cambio+acoes&hl=pt-BR&gl=BR&ceid=BR:pt-419' },
-    investir: { label: 'Investimentos',   color: 'var(--purple)', flag: '💰', url: 'https://news.google.com/rss/search?q=investimento+renda+fixa+tesouro+fii+fundos&hl=pt-BR&gl=BR&ceid=BR:pt-419' },
-    negocios: { label: 'Negócios',        color: 'var(--amber)',  flag: '💼', url: 'https://news.google.com/rss/search?q=negocios+empresas+lucro+resultado+brasil&hl=pt-BR&gl=BR&ceid=BR:pt-419' },
+    economia: { label: 'Economia',        color: 'var(--green)',  flag: '📈', q: 'economia brasil mercado' },
+    juros:    { label: 'Juros & Inflação', color: 'var(--red)',   flag: '🏦', q: 'selic juros inflação banco central' },
+    bolsa:    { label: 'Bolsa & Câmbio',  color: 'var(--blue)',   flag: '📊', q: 'bolsa b3 dólar câmbio ações' },
+    investir: { label: 'Investimentos',   color: 'var(--purple)', flag: '💰', q: 'investimento tesouro renda fixa FII' },
+    negocios: { label: 'Negócios',        color: 'var(--amber)',  flag: '💼', q: 'negócios empresas resultado brasil' },
   };
 
   const IMPACT_STYLE = {
@@ -4091,31 +4114,27 @@ tr+tr td{border-top:1px solid #f3f3f3}
     return `${Math.floor(diff/86400)}d atrás`;
   }
 
+
   async function fetchSource(key) {
+    if(!hasKey()) return [];
     const src = SOURCES[key];
     try {
-      const res = await fetch(src.url, { signal: AbortSignal.timeout(10000) });
+      const url = `${GNEWS_BASE}?q=${encodeURIComponent(src.q)}&lang=pt&country=br&max=10&apikey=${getGNewsKey()}`;
+      const res = await fetch(url, { signal: AbortSignal.timeout(10000) });
       if(!res.ok) throw new Error(res.status);
-      const xml = await res.text();
-      const doc = new DOMParser().parseFromString(xml, 'text/xml');
-      return Array.from(doc.querySelectorAll('item'))
-        .filter(item => {
-          const title = item.querySelector('title')?.textContent || '';
-          const desc  = item.querySelector('description')?.textContent || '';
-          return isFinanceNews(title, desc);
-        })
-        .slice(0, 12)
-        .map(item => {
-          const rawTitle = item.querySelector('title')?.textContent?.trim() || '';
-          const link     = item.querySelector('link')?.textContent?.trim() || '#';
-          const desc     = (item.querySelector('description')?.textContent || '').replace(/<[^>]+>/g,'').slice(0,200).trim();
-          const pubDate  = item.querySelector('pubDate')?.textContent?.trim() || '';
-          // Google News: "Título - Fonte"
-          const parts    = rawTitle.split(' - ');
-          const srcName  = parts.length > 1 ? parts.pop().trim() : '';
-          const title    = parts.join(' - ');
-          return { src: key, title, srcName, link, description: desc, pubDate, impact: getCachedImpact(title) };
-        });
+      const data = await res.json();
+      if(!data.articles) return [];
+      return data.articles
+        .filter(a => isFinanceNews(a.title, a.description || ''))
+        .map(a => ({
+          src: key,
+          title: a.title || '',
+          srcName: a.source?.name || '',
+          link: a.url || '#',
+          description: (a.description || '').slice(0, 200),
+          pubDate: a.publishedAt || '',
+          impact: getCachedImpact(a.title)
+        }));
     } catch(e) {
       console.warn('fetchSource error:', key, e);
       return [];
@@ -4399,6 +4418,28 @@ Formato exato (sem nada fora do JSON):
     _loading = true;
 
     const list = document.getElementById('news-list');
+
+    // Sem key configurada — mostra instruções
+    if(!hasKey()) {
+      _loading = false;
+      if(list) list.innerHTML = `<div style="background:var(--s1);border:1px solid rgba(91,158,255,.2);border-radius:16px;padding:20px;text-align:center">
+        <div style="font-size:36px;margin-bottom:10px">🔑</div>
+        <div style="font-size:15px;font-weight:700;margin-bottom:8px">Configure sua API Key</div>
+        <div style="font-size:13px;color:var(--muted2);line-height:1.7;margin-bottom:16px">
+          Para carregar notícias, você precisa de uma chave gratuita do <b style="color:var(--text)">GNews</b>.<br>
+          São <b style="color:var(--green)">100 notícias/dia grátis</b>, sem cartão de crédito.
+        </div>
+        <div style="background:var(--s2);border-radius:12px;padding:14px;text-align:left;margin-bottom:16px;font-size:12.5px;color:var(--muted2);line-height:1.8">
+          <b style="color:var(--text)">Como ativar:</b><br>
+          1. Acesse <b style="color:var(--blue)">gnews.io</b> e crie uma conta grátis<br>
+          2. Copie sua API key<br>
+          3. Cole na aba <b style="color:var(--text)">⚙️ Config</b> → campo "GNews API Key"
+        </div>
+        <a href="https://gnews.io" target="_blank" style="display:inline-block;padding:11px 24px;background:var(--blue);border-radius:12px;color:#fff;font-size:13px;font-weight:700;text-decoration:none">Criar conta grátis →</a>
+      </div>`;
+      return;
+    }
+
     if(list) list.innerHTML = `<div style="text-align:center;padding:40px 16px;color:var(--muted)">
       <div style="font-size:36px;margin-bottom:10px;opacity:.3;animation:pulse-green 1.5s infinite">📰</div>
       <div style="font-size:13px">Carregando notícias...</div>
@@ -4775,6 +4816,33 @@ Formato exato (sem nada fora do JSON):
     document.getElementById('ai-analysis-idle').style.display   = 'block';
   };
 
+})();
+</script>
+
+<script>
+// GNews key management
+(function(){
+  // Preenche o campo com key salva
+  const input = document.getElementById('gnews-key-input');
+  if(input) {
+    const saved = localStorage.getItem('_gnews_key') || '';
+    input.value = saved;
+  }
+
+  window.saveGNewsKey = function() {
+    const input = document.getElementById('gnews-key-input');
+    const status = document.getElementById('gnews-key-status');
+    const key = input?.value?.trim() || '';
+    if(!key) {
+      if(status) { status.textContent = '❌ Digite uma key válida'; status.style.color = 'var(--red)'; }
+      return;
+    }
+    localStorage.setItem('_gnews_key', key);
+    if(status) { status.textContent = '✅ Key salva! Vá em Novidades para carregar.'; status.style.color = 'var(--green)'; }
+    // Reseta cache de carregamento para recarregar com nova key
+    if(window.loadNews) { window._newsLoaded = false; }
+    setTimeout(() => { if(status) status.textContent = ''; }, 3000);
+  };
 })();
 </script>
 
