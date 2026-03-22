@@ -723,9 +723,10 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
   <!-- Filtros de fonte -->
   <div style="display:flex;gap:6px;overflow-x:auto;padding:0 0 10px;margin-bottom:4px" class="cat-scroll">
     <button class="news-src-btn on" data-src="all" onclick="filterNewsSource('all')">🌐 Todas</button>
-    <button class="news-src-btn" data-src="g1" onclick="filterNewsSource('g1')">🔵 G1</button>
-    <button class="news-src-btn" data-src="infomoney" onclick="filterNewsSource('infomoney')">💹 InfoMoney</button>
-    <button class="news-src-btn" data-src="bcb" onclick="filterNewsSource('bcb')">🏦 Banco Central</button>
+    <button class="news-src-btn" data-src="economia" onclick="filterNewsSource('economia')">📈 Economia</button>
+    <button class="news-src-btn" data-src="mercado" onclick="filterNewsSource('mercado')">💹 Mercado</button>
+    <button class="news-src-btn" data-src="juros" onclick="filterNewsSource('juros')">🏦 Banco Central</button>
+    <button class="news-src-btn" data-src="negocios" onclick="filterNewsSource('negocios')">💼 Negócios</button>
   </div>
 
   <!-- Conteúdo -->
@@ -4200,26 +4201,33 @@ tr+tr td{border-top:1px solid #f3f3f3}
 <!-- ── NOVIDADES (NEWS) ── -->
 <script>
 (function(){
+  // Google News RSS (nativo, gratuito, sem API key) convertido via rss2json
   const RSS2JSON = 'https://api.rss2json.com/v1/api.json?rss_url=';
 
   const SOURCES = {
-    g1: {
-      label: 'G1 Economia',
-      color: 'var(--blue)',
-      flag: '🔵',
-      url: 'https://g1.globo.com/rss/g1/economia/'
-    },
-    infomoney: {
-      label: 'InfoMoney',
+    economia: {
+      label: 'Economia',
       color: 'var(--green)',
-      flag: '💹',
-      url: 'https://infomoney.com.br/economia/feed'
+      flag: '📈',
+      url: 'https://news.google.com/rss/search?q=economia+brasil&hl=pt-BR&gl=BR&ceid=BR:pt-419'
     },
-    bcb: {
+    mercado: {
+      label: 'Mercado',
+      color: 'var(--blue)',
+      flag: '💹',
+      url: 'https://news.google.com/rss/search?q=bolsa+dolar+mercado+financeiro&hl=pt-BR&gl=BR&ceid=BR:pt-419'
+    },
+    juros: {
       label: 'Banco Central',
       color: 'var(--amber)',
       flag: '🏦',
-      url: 'https://www.bcb.gov.br/api/feed/sitemap/noticias.xml'
+      url: 'https://news.google.com/rss/search?q=banco+central+selic+juros+inflacao&hl=pt-BR&gl=BR&ceid=BR:pt-419'
+    },
+    negocios: {
+      label: 'Negócios',
+      color: 'var(--purple)',
+      flag: '💼',
+      url: 'https://news.google.com/rss/search?q=negocios+empresas+brasil&hl=pt-BR&gl=BR&ceid=BR:pt-419'
     }
   };
 
@@ -4241,7 +4249,7 @@ tr+tr td{border-top:1px solid #f3f3f3}
   function stripHtml(html) {
     const tmp = document.createElement('div');
     tmp.innerHTML = html || '';
-    return tmp.textContent || tmp.innerText || '';
+    return (tmp.textContent || tmp.innerText || '').replace(/\s+/g,' ').trim();
   }
 
   function renderNewsList() {
@@ -4262,11 +4270,15 @@ tr+tr td{border-top:1px solid #f3f3f3}
 
     list.innerHTML = filtered.map(n => {
       const src = SOURCES[n.src];
-      const desc = stripHtml(n.description).slice(0, 120).trim();
+      const desc = stripHtml(n.description).slice(0,120).trim();
+      // Extrai fonte original do título (Google News coloca "- Fonte" no final)
+      const titleParts = n.title.split(' - ');
+      const srcName = titleParts.length > 1 ? titleParts.pop().trim() : '';
+      const cleanTitle = titleParts.join(' - ');
       return `<a class="news-card" href="${n.link}" target="_blank" rel="noopener">
-        <div class="news-card-source" style="color:${src.color}">${src.flag} ${src.label}</div>
-        <div class="news-card-title">${n.title}</div>
-        ${desc ? `<div class="news-card-desc">${desc}…</div>` : ''}
+        <div class="news-card-source" style="color:${src.color}">${src.flag} ${src.label}${srcName ? ` <span style="color:var(--muted);font-weight:400">· ${srcName}</span>` : ''}</div>
+        <div class="news-card-title">${cleanTitle}</div>
+        ${desc && desc.length > 20 ? `<div class="news-card-desc">${desc}…</div>` : ''}
         <div class="news-card-footer">
           <span>${timeAgo(n.pubDate)}</span>
           <span class="news-tag">↗ Abrir</span>
@@ -4278,7 +4290,8 @@ tr+tr td{border-top:1px solid #f3f3f3}
   async function fetchSource(key) {
     const src = SOURCES[key];
     try {
-      const res = await fetch(`${RSS2JSON}${encodeURIComponent(src.url)}&count=15`);
+      const res = await fetch(`${RSS2JSON}${encodeURIComponent(src.url)}&count=12`);
+      if(!res.ok) throw new Error(res.status);
       const data = await res.json();
       if(data.status === 'ok' && data.items) {
         return data.items.map(item => ({
@@ -4289,7 +4302,9 @@ tr+tr td{border-top:1px solid #f3f3f3}
           pubDate: item.pubDate || ''
         }));
       }
-    } catch(e) {}
+    } catch(e) {
+      console.warn('News fetch error:', key, e);
+    }
     return [];
   }
 
@@ -4299,25 +4314,41 @@ tr+tr td{border-top:1px solid #f3f3f3}
     _loading = true;
 
     const list = document.getElementById('news-list');
-    if(list) list.innerHTML = `<div id="news-loading" style="text-align:center;padding:40px 16px;color:var(--muted)">
-      <div style="font-size:36px;margin-bottom:10px;opacity:.3">📰</div>
+    if(list) list.innerHTML = `<div style="text-align:center;padding:40px 16px;color:var(--muted)">
+      <div style="font-size:36px;margin-bottom:10px;opacity:.3;animation:pulse-green 1.5s infinite">📰</div>
       <div style="font-size:13px">Carregando notícias...</div>
     </div>`;
 
-    const results = await Promise.allSettled([
-      fetchSource('g1'),
-      fetchSource('infomoney'),
-      fetchSource('bcb')
-    ]);
+    const keys = Object.keys(SOURCES);
+    const results = await Promise.allSettled(keys.map(k => fetchSource(k)));
 
     _allNews = [];
     results.forEach(r => { if(r.status === 'fulfilled') _allNews.push(...r.value); });
 
+    // Remove duplicatas por título similar
+    const seen = new Set();
+    _allNews = _allNews.filter(n => {
+      const key = n.title.slice(0,40).toLowerCase();
+      if(seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+
     // Ordena por data desc
-    _allNews.sort((a, b) => new Date(b.pubDate) - new Date(a.pubDate));
+    _allNews.sort((a,b) => new Date(b.pubDate) - new Date(a.pubDate));
 
     _loaded = true;
     _loading = false;
+
+    if(!_allNews.length && list) {
+      list.innerHTML = `<div style="text-align:center;padding:40px 16px;color:var(--muted)">
+        <div style="font-size:36px;margin-bottom:10px;opacity:.3">⚠️</div>
+        <div style="font-size:13px">Não foi possível carregar notícias.<br><span style="font-size:11px">Verifique sua conexão e tente novamente.</span></div>
+        <button onclick="window.loadNews(true)" style="margin-top:14px;padding:8px 20px;border-radius:99px;border:1px solid var(--border2);background:none;color:var(--muted2);font-family:'DM Sans',sans-serif;font-size:12px;cursor:pointer">🔄 Tentar novamente</button>
+      </div>`;
+      return;
+    }
+
     renderNewsList();
   };
 
