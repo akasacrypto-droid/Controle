@@ -1639,6 +1639,7 @@ function _renderPlanTotals(){
 
 /* ── PLAN: ORÇAMENTO ── */
 function renderPlanRegra(){
+  if(!window.t){setTimeout(renderPlanRegra,50);return;}
   const res=_renderPlanTotals();
   const curTxs=txData.filter(t=>t.month===curKey());
   const curInc=curTxs.filter(t=>t.type==='income').reduce((s,t)=>s+t.val,0);
@@ -1774,6 +1775,7 @@ function delGoal(id){
   goalData=goalData.filter(x=>x.id!==id);saveGoals();renderGoals();showToast(t('toast.goal.removed'));
 }
 function renderGoals(){
+  if(!window.t){setTimeout(renderGoals,50);return;}
   const el=document.getElementById('goals-list');
   if(!el)return;
   if(!goalData.length){
@@ -1906,6 +1908,7 @@ function getRepLabel(){
 }
 
 function renderReport(){
+  if(!window.t){setTimeout(renderReport,50);return;}
   if(repPieInst)repPieInst.destroy();
   if(repBarInst)repBarInst.destroy();
 
