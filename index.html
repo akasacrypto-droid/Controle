@@ -416,9 +416,9 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
 
   <!-- SUB-TABS -->
   <div style="display:flex;gap:7px;margin-bottom:14px">
-    <button class="plan-sub-tab on" id="psub-metas" onclick="goPlanTab('metas')" style="flex:1">🎯 Metas</button>
-    <button class="plan-sub-tab" id="psub-regra" onclick="goPlanTab('regra')" style="flex:1">⚖️ Orçamento</button>
-    <button class="plan-sub-tab" id="psub-cambio" onclick="goPlanTab('cambio')" style="flex:1">💱 Câmbio</button>
+    <button class="plan-sub-tab on" id="psub-metas" onclick="goPlanTab('metas')" style="flex:1" data-i18n="plan.goals">Metas</button>
+    <button class="plan-sub-tab" id="psub-regra" onclick="goPlanTab('regra')" style="flex:1" data-i18n="plan.budget">Orçamento</button>
+    <button class="plan-sub-tab" id="psub-cambio" onclick="goPlanTab('cambio')" style="flex:1" data-i18n="plan.cambio">Câmbio</button>
   </div>
 
   <!-- ── SUB: METAS ── -->
@@ -1396,7 +1396,7 @@ function initNotif(){
   if(saved&&Notification.permission==='granted'){
     document.getElementById('notif-toggle').checked=true;
     document.getElementById('notif-badge').classList.add('on');
-    document.getElementById('notif-status').textContent=t('toast.notif.on');
+    document.getElementById('notif-status').textContent=(window.t?window.t('toast.notif.on'):'🔔 Notificações ativas');
     scheduleNotif();
   }
 }
