@@ -4222,10 +4222,13 @@ tr+tr td{border-top:1px solid #f3f3f3}
     const yest   = window._getRatesYestInBRL?.() || {};
     const crypto = window._cryptoRatesInBRL?.()  || {};
     const all    = {...rates, ...crypto};
-    if(Object.keys(all).length <= 1) return;
+
+    // Fallback estático enquanto cotações carregam
+    const STATIC = {USD:5.31,EUR:6.03,GBP:7.08,JPY:0.0334,BTC:480000,ETH:9200,BNB:1450,SOL:620};
+    const src = Object.keys(all).length > 2 ? all : STATIC;
 
     const items = TICKER_ITEMS.map(item => {
-      const price = all[item.code]; if(!price) return null;
+      const price = src[item.code]; if(!price) return null;
       const prev  = yest[item.code];
       const pct   = prev ? ((price - prev) / prev) * 100 : null;
       const up    = pct !== null && pct >= 0;
@@ -4250,11 +4253,9 @@ tr+tr td{border-top:1px solid #f3f3f3}
       ${item.vStr?`<span class="ticker-var" style="color:${item.up?'var(--green)':'var(--red)'};background:${item.up?'rgba(0,200,150,.12)':'rgba(255,92,92,.12)'}">${item.vStr}</span>`:''}
     </span>`;
 
-    // Preenche com cópias suficientes para loop contínuo
     const repeated = [...items,...items,...items].map(make).join('');
     track.innerHTML = repeated;
 
-    // Mede largura real após render e aplica animação
     requestAnimationFrame(() => {
       const oneSetW = track.scrollWidth / 3;
       const sEl = document.getElementById('ticker-keyframe') || document.createElement('style');
@@ -4262,9 +4263,12 @@ tr+tr td{border-top:1px solid #f3f3f3}
       sEl.textContent = `@keyframes tk{from{transform:translateX(0)}to{transform:translateX(-${oneSetW}px)}}`;
       document.head.appendChild(sEl);
       const dur = Math.max(15, oneSetW / 50);
-      track.style.cssText += `;animation:tk ${dur}s linear infinite`;
+      track.style.animation = `tk ${dur}s linear infinite`;
     });
   }
+
+  // Chama imediatamente com dados estáticos
+  buildTicker();
 
   window._updateTicker = buildTicker;
 
