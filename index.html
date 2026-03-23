@@ -4317,13 +4317,12 @@ Inclua: 1)📊 Perfil financeiro com os valores reais 2)🔴 Alertas usando os v
   function buildTicker() {
     const track = document.getElementById('ticker-track');
     if(!track) return;
-    const rates  = window._getRatesInBRL?.()     || window._tickerRatesOverride || {};
-    const yest   = window._getRatesYestInBRL?.() || {};
-    const crypto = window._cryptoRatesInBRL?.()  || {};
-    const all    = {...rates, ...crypto};
-
-    // Só renderiza com dados reais
-    if(Object.keys(all).length <= 2) return;
+    // Mescla: fallback estático → rates ao vivo → crypto ao vivo (ordem = prioridade crescente)
+    const fallback = window._tickerRatesOverride || {};
+    const rates    = window._getRatesInBRL?.() || {};
+    const yest     = window._getRatesYestInBRL?.() || {};
+    const crypto   = window._cryptoRatesInBRL?.()  || {};
+    const all      = {...fallback, ...rates, ...crypto};
 
     const items = TICKER_ITEMS.map(item => {
       const price = all[item.code]; if(!price) return null;
@@ -4365,10 +4364,14 @@ Inclua: 1)📊 Perfil financeiro com os valores reais 2)🔴 Alertas usando os v
     });
   }
 
-  // Chama imediatamente com dados estáticos (fallback realista Mar/2026)
+  // Chama com dados estáticos assim que o DOM estiver pronto (fallback realista Mar/2026)
   const STATIC_FALLBACK = {USD:5.31,EUR:6.03,GBP:7.08,JPY:0.0334,CAD:3.87,CHF:6.72,ARS:0.0038,CNY:0.77,AUD:3.73,BTC:365000,ETH:11000,SOL:465,BNB:3300,XRP:7.4,DOGE:0.8};
   window._tickerRatesOverride = STATIC_FALLBACK;
-  buildTicker();
+  if(document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', buildTicker);
+  } else {
+    buildTicker();
+  }
 
   window._updateTicker = buildTicker;
 
@@ -4402,14 +4405,31 @@ Inclua: 1)📊 Perfil financeiro com os valores reais 2)🔴 Alertas usando os v
     } catch(e) { return null; }
   }
 
-  // Atualiza com dados reais após carregar
+  // Atualiza com dados reais após carregar (preserva cryptos do fallback)
   (async () => {
     const fetched = await fetchTickerRates();
     if(fetched && Object.keys(fetched).length > 2) {
-      window._tickerRatesOverride = fetched;
+      // Mantém cryptos do fallback anterior ao mesclar com taxas reais
+      const prevOverride = window._tickerRatesOverride || {};
+      const CRYPTO_CODES = ['BTC','ETH','SOL','BNB','XRP','DOGE','ADA','DOT'];
+      const cryptoFallback = {};
+      CRYPTO_CODES.forEach(c => { if(prevOverride[c]) cryptoFallback[c] = prevOverride[c]; });
+      window._tickerRatesOverride = {...fetched, ...cryptoFallback};
       buildTicker();
     }
   })();
+
+  // Reconstrói o ticker quando os dados crypto reais chegarem
+  const _origInjectCrypto = window._injectCryptoRates;
+  const _tickerCryptoWatch = setInterval(() => {
+    if(window._cryptoRatesInBRL) {
+      const cr = window._cryptoRatesInBRL();
+      if(Object.keys(cr).length > 0) {
+        buildTicker();
+        clearInterval(_tickerCryptoWatch);
+      }
+    }
+  }, 1500);
 })();
 
 </body>
