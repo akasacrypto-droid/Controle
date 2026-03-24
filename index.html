@@ -1165,23 +1165,6 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
               <input id="mkt-qtd" type="number" inputmode="numeric" min="1" value="1" placeholder="Qtd" style="width:80px;padding:12px 14px;background:var(--s2);border:1px solid var(--border2);border-radius:12px;color:var(--text);font-size:16px;font-family:'DM Sans',sans-serif;outline:none;text-align:center">
             </div>
             <button onclick="mktAddItem()" style="width:100%;padding:14px;border:none;border-radius:13px;background:linear-gradient(135deg,#00C896,#00b386);color:#0a1a13;font-size:14px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;box-shadow:0 4px 15px rgba(0,200,150,.2)">＋ Adicionar produto</button>
-
-            <!-- Scan -->
-            <button onclick="document.getElementById('mkt-scan-input').click()" style="width:100%;padding:12px;border:1px dashed rgba(0,200,150,.3);border-radius:13px;background:rgba(0,200,150,.04);color:var(--green);font-size:13px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">
-              📸 Escanear etiqueta / código de barras
-            </button>
-            <input type="file" id="mkt-scan-input" accept="image/*" capture="environment" style="display:none" onchange="mktScanImage(this)">
-            <div id="mkt-scan-preview-wrap" style="display:none;position:relative;border-radius:12px;overflow:hidden">
-              <img id="mkt-scan-preview-img" style="width:100%;display:block;max-height:160px;object-fit:cover">
-              <button onclick="mktClearScan()" style="position:absolute;top:6px;right:6px;width:28px;height:28px;border-radius:50%;border:none;background:rgba(0,0,0,.65);color:#fff;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center">✕</button>
-            </div>
-            <div id="mkt-barcode-result" style="display:none;padding:10px 12px;background:var(--s2);border-radius:11px;font-size:12px;color:var(--muted2);display:none;align-items:center;gap:8px">
-              <span style="font-size:16px">📦</span>
-              <div>
-                <div id="mkt-barcode-code" style="font-weight:700"></div>
-                <div id="mkt-barcode-status" style="font-size:11px;color:var(--muted)"></div>
-              </div>
-            </div>
           </div>
         </div>
       </div>
@@ -5426,7 +5409,7 @@ document.addEventListener('DOMContentLoaded',function(){
   const HIST_KEY='_fin_mkt_history';
   let _mktItems=JSON.parse(localStorage.getItem(MKT_KEY)||'[]');
   let _mktHist=JSON.parse(localStorage.getItem(HIST_KEY)||'[]');
-  let _mktScanData=null;
+
 
   /* ── Sub-tabs Outros ── */
   window.goOutrosTab=function(sub){
@@ -5464,13 +5447,10 @@ document.addEventListener('DOMContentLoaded',function(){
       id:Date.now(),
       nome:nome,
       preco:preco,
-      qtd:Math.max(1,qtd),
-      img:_mktScanData||null,
-      barcode:document.getElementById('mkt-barcode-code').textContent||null
+      qtd:Math.max(1,qtd)
     });
     _save();
     nomeEl.value=''; precoEl.value=''; qtdEl.value='1';
-    mktClearScan();
     nomeEl.focus();
     mktRender();
   };
@@ -5548,11 +5528,8 @@ document.addEventListener('DOMContentLoaded',function(){
     _mktItems.forEach(item=>{
       const sub=(item.preco*item.qtd).toFixed(2).replace('.',',');
       const pUnit=item.preco.toFixed(2).replace('.',',');
-      const imgTag=item.img
-        ?'\x3cimg style="width:42px;height:42px;border-radius:10px;object-fit:cover;background:var(--s2);flex-shrink:0;border:1px solid var(--border)" src="'+item.img.replace(/"/g,'&quot;')+'"\x3e'
-        :'\x3cdiv style="width:42px;height:42px;border-radius:10px;background:var(--s2);flex-shrink:0;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:16px"\x3e🏷️\x3c/div\x3e';
       html+='\x3cdiv style="display:flex;align-items:center;gap:10px;padding:13px 14px;border-bottom:1px solid var(--border)"\x3e'
-        +imgTag
+        +'\x3cdiv style="width:38px;height:38px;border-radius:10px;background:var(--s2);flex-shrink:0;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:15px"\x3e🏷️\x3c/div\x3e'
         +'\x3cdiv style="flex:1;min-width:0"\x3e'
         +'\x3cdiv style="font-size:13.5px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis"\x3e'+_esc(item.nome)+'\x3c/div\x3e'
         +'\x3cdiv style="font-size:11px;color:var(--muted);margin-top:3px"\x3eR$ '+pUnit+' × '+item.qtd+'\x3c/div\x3e'
@@ -5632,64 +5609,6 @@ document.addEventListener('DOMContentLoaded',function(){
         +'\x3c/div\x3e';
     });
     wrap.innerHTML=html;
-  }
-
-  /* ── Scan foto/etiqueta ── */
-  window.mktScanImage=function(input){
-    const file=input.files&&input.files[0];
-    if(!file) return;
-    const reader=new FileReader();
-    reader.onload=function(e){
-      _mktScanData=e.target.result;
-      document.getElementById('mkt-scan-preview-img').src=_mktScanData;
-      document.getElementById('mkt-scan-preview-wrap').style.display='block';
-      _tryBarcodeScan(_mktScanData);
-    };
-    reader.readAsDataURL(file);
-    input.value='';
-  };
-
-  window.mktClearScan=function(){
-    _mktScanData=null;
-    document.getElementById('mkt-scan-preview-wrap').style.display='none';
-    document.getElementById('mkt-barcode-result').style.display='none';
-    document.getElementById('mkt-barcode-code').textContent='';
-    document.getElementById('mkt-barcode-status').textContent='';
-  };
-
-  /* ── Detecção de código de barras (BarcodeDetector API) ── */
-  async function _tryBarcodeScan(dataUrl){
-    const codeEl=document.getElementById('mkt-barcode-code');
-    const statusEl=document.getElementById('mkt-barcode-status');
-    const wrap=document.getElementById('mkt-barcode-result');
-
-    if(!('BarcodeDetector' in window)){
-      wrap.style.display='flex';
-      codeEl.textContent='\u2014';
-      statusEl.textContent='Navegador não suporta leitura de código';
-      return;
-    }
-    wrap.style.display='flex';
-    codeEl.textContent='...';
-    statusEl.textContent='Analisando imagem...';
-
-    try{
-      const img=new Image();
-      img.src=dataUrl;
-      await new Promise((ok,fail)=>{ img.onload=ok; img.onerror=fail; });
-      const detector=new BarcodeDetector({formats:['ean_13','ean_8','upc_a','upc_e','code_128','code_39','qr_code']});
-      const codes=await detector.detect(img);
-      if(codes.length){
-        codeEl.textContent=codes[0].rawValue;
-        statusEl.textContent=codes[0].format.toUpperCase()+' detectado';
-      } else {
-        codeEl.textContent='\u2014';
-        statusEl.textContent='Nenhum código encontrado';
-      }
-    }catch(e){
-      codeEl.textContent='\u2014';
-      statusEl.textContent='Erro ao ler código';
-    }
   }
 
   function _esc(s){ return String(s).replace(/&/g,'&amp;').replace(/\x3c/g,'&lt;').replace(/\x3e/g,'&gt;').replace(/"/g,'&quot;'); }
