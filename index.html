@@ -1136,55 +1136,81 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
   <!-- ── MODO MERCADO ── -->
   <div id="outrospage-mercado" style="display:none">
 
-    <!-- TOTAL -->
-    <div class="mkt-total-bar">
-      <span class="mkt-total-label">🛒 Total da compra</span>
-      <span class="mkt-total-value" id="mkt-total">R$ 0,00</span>
+    <!-- HERO TOTAL -->
+    <div class="mkt-hero">
+      <div class="mkt-hero-top">
+        <span class="mkt-hero-label">🛒 Compra atual</span>
+        <span class="mkt-hero-count" id="mkt-count">0 itens</span>
+      </div>
+      <div class="mkt-hero-total" id="mkt-total">R$ 0,00</div>
+      <div class="mkt-hero-sub" id="mkt-hero-sub">Adicione produtos abaixo</div>
     </div>
 
-    <!-- FORMULÁRIO -->
-    <div class="card" style="margin-bottom:12px">
-      <div style="padding:14px">
-        <div class="mkt-form">
-          <!-- Scan foto -->
-          <button class="mkt-scan-btn" onclick="document.getElementById('mkt-scan-input').click()">
-            📸 Escanear etiqueta / código de barras
-          </button>
-          <input type="file" id="mkt-scan-input" accept="image/*" capture="environment" style="display:none" onchange="mktScanImage(this)">
-          <div id="mkt-scan-preview-wrap" style="display:none" class="mkt-scan-preview">
-            <img id="mkt-scan-preview-img">
-            <button class="mkt-scan-close" onclick="mktClearScan()">✕</button>
-          </div>
-          <div id="mkt-barcode-result" class="mkt-barcode-info" style="display:none">
-            <span style="font-size:16px">📦</span>
-            <div>
-              <div id="mkt-barcode-code" style="font-weight:700"></div>
-              <div id="mkt-barcode-status" style="font-size:11px;color:var(--muted)"></div>
+    <!-- SUB-TABS: Lista / Histórico -->
+    <div class="mkt-tabs">
+      <button class="plan-sub-tab on" id="mktsub-lista" onclick="goMktTab('lista')">📋 Lista</button>
+      <button class="plan-sub-tab" id="mktsub-historico" onclick="goMktTab('historico')">📊 Histórico</button>
+    </div>
+
+    <!-- ── ABA LISTA ── -->
+    <div id="mktpage-lista">
+
+      <!-- FORMULÁRIO -->
+      <div class="card" style="margin-bottom:12px">
+        <div style="padding:14px">
+          <div class="mkt-form">
+            <input class="mkt-input" id="mkt-nome" type="text" placeholder="Nome do produto" autocomplete="off">
+            <div class="mkt-row-inline">
+              <input class="mkt-input" id="mkt-preco" type="number" inputmode="decimal" step="0.01" min="0" placeholder="Preço (R$)">
+              <input class="mkt-input" id="mkt-qtd" type="number" inputmode="numeric" min="1" value="1" placeholder="Qtd" style="max-width:90px">
+            </div>
+            <button class="mkt-add-btn" onclick="mktAddItem()">＋ Adicionar produto</button>
+
+            <!-- Scan -->
+            <button class="mkt-scan-btn" onclick="document.getElementById('mkt-scan-input').click()">
+              📸 Escanear etiqueta / código de barras
+            </button>
+            <input type="file" id="mkt-scan-input" accept="image/*" capture="environment" style="display:none" onchange="mktScanImage(this)">
+            <div id="mkt-scan-preview-wrap" style="display:none" class="mkt-scan-preview">
+              <img id="mkt-scan-preview-img">
+              <button class="mkt-scan-close" onclick="mktClearScan()">✕</button>
+            </div>
+            <div id="mkt-barcode-result" class="mkt-barcode-info" style="display:none">
+              <span style="font-size:16px">📦</span>
+              <div>
+                <div id="mkt-barcode-code" style="font-weight:700"></div>
+                <div id="mkt-barcode-status" style="font-size:11px;color:var(--muted)"></div>
+              </div>
             </div>
           </div>
-
-          <input class="mkt-input" id="mkt-nome" type="text" placeholder="Nome do produto" autocomplete="off">
-          <div class="mkt-row-inline">
-            <input class="mkt-input" id="mkt-preco" type="number" inputmode="decimal" step="0.01" min="0" placeholder="Preço (R$)">
-            <input class="mkt-input" id="mkt-qtd" type="number" inputmode="numeric" min="1" value="1" placeholder="Qtd" style="max-width:80px">
-          </div>
-          <button class="mkt-add-btn" onclick="mktAddItem()">＋ Adicionar produto</button>
         </div>
       </div>
+
+      <!-- LISTA -->
+      <div class="card" id="mkt-list-card">
+        <div class="card-head">
+          <span class="card-title">🛒 Produtos</span>
+          <span id="mkt-item-count" style="font-size:11px;color:var(--muted)">0 itens</span>
+        </div>
+        <div id="mkt-list">
+          <div class="mkt-empty"><div class="mkt-empty-ico">🛒</div>Nenhum produto adicionado<br><span style="font-size:11px;opacity:.7">Use o formulário acima para começar</span></div>
+        </div>
+      </div>
+
+      <!-- AÇÕES -->
+      <div class="mkt-actions" id="mkt-actions" style="display:none">
+        <button class="mkt-act-btn save" onclick="mktSaveToHistory()">💾 Salvar compra</button>
+        <button class="mkt-act-btn danger" onclick="mktClearList()">🗑️ Limpar lista</button>
+      </div>
+
     </div>
 
-    <!-- LISTA -->
-    <div class="card" id="mkt-list-card">
-      <div class="card-head">
-        <span class="card-title">📋 Lista de compras</span>
-        <span id="mkt-item-count" style="font-size:11px;color:var(--muted)">0 itens</span>
-      </div>
-      <div id="mkt-list">
-        <div class="mkt-empty" id="mkt-empty">Nenhum produto adicionado</div>
+    <!-- ── ABA HISTÓRICO ── -->
+    <div id="mktpage-historico" style="display:none">
+      <div id="mkt-hist-list">
+        <div class="mkt-empty"><div class="mkt-empty-ico">📊</div>Nenhuma compra salva ainda<br><span style="font-size:11px;opacity:.7">Finalize uma compra na aba Lista para ver aqui</span></div>
       </div>
     </div>
-
-    <button class="mkt-clear-btn" id="mkt-clear-btn" onclick="mktClearList()" style="display:none">🗑️ Limpar lista</button>
 
   </div>
 
@@ -2885,35 +2911,77 @@ tr+tr td{border-top:1px solid #f3f3f3}
 @media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
 
 /* ── MODO MERCADO ── */
+.mkt-hero{background:linear-gradient(135deg,#0d2818 0%,#132a1e 50%,#0f2318 100%);border:1px solid rgba(0,200,150,.18);border-radius:18px;padding:18px 16px;margin-bottom:12px;position:relative;overflow:hidden}
+.mkt-hero::before{content:'';position:absolute;top:-40%;right:-20%;width:200px;height:200px;background:radial-gradient(circle,rgba(0,200,150,.08) 0%,transparent 70%);pointer-events:none}
+.mkt-hero-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.mkt-hero-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;font-weight:700}
+.mkt-hero-count{font-size:11px;color:var(--muted);background:var(--s2);padding:3px 10px;border-radius:99px}
+.mkt-hero-total{font-family:'DM Mono',monospace;font-size:30px;font-weight:700;color:var(--green);letter-spacing:-.5px}
+.mkt-hero-sub{font-size:11px;color:var(--muted);margin-top:4px}
+.mkt-tabs{display:flex;gap:6px;margin-bottom:12px}
+.mkt-tabs .plan-sub-tab{flex:1}
 .mkt-form{display:flex;flex-direction:column;gap:10px}
-.mkt-input{width:100%;padding:11px 13px;background:var(--s2);border:1px solid var(--border2);border-radius:11px;color:var(--text);font-size:13.5px;font-family:'DM Sans',sans-serif;outline:none;transition:border .15s}
-.mkt-input:focus{border-color:var(--green)}
+.mkt-input{width:100%;padding:12px 14px;background:var(--s2);border:1px solid var(--border2);border-radius:12px;color:var(--text);font-size:14px;font-family:'DM Sans',sans-serif;outline:none;transition:border .2s}
+.mkt-input:focus{border-color:var(--green);box-shadow:0 0 0 3px rgba(0,200,150,.1)}
 .mkt-input::placeholder{color:var(--muted)}
 .mkt-row-inline{display:flex;gap:8px}
 .mkt-row-inline .mkt-input{flex:1}
-.mkt-add-btn{width:100%;padding:12px;border:none;border-radius:12px;background:var(--green);color:#0a1a13;font-size:13px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;transition:opacity .15s}
-.mkt-add-btn:active{opacity:.8}
-.mkt-scan-btn{width:100%;padding:10px;border:1px dashed var(--border2);border-radius:12px;background:none;color:var(--muted2);font-size:12px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:center;gap:6px}
-.mkt-scan-btn:hover{border-color:var(--green);color:var(--green)}
-.mkt-total-bar{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;background:var(--green-bg);border-radius:13px;margin-bottom:12px}
-.mkt-total-label{font-size:13px;color:var(--green);font-weight:700}
-.mkt-total-value{font-size:22px;color:var(--green);font-weight:800;font-family:'DM Sans',sans-serif}
-.mkt-item{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid var(--border);transition:background .15s}
+.mkt-add-btn{width:100%;padding:13px;border:none;border-radius:13px;background:linear-gradient(135deg,#00C896,#00b386);color:#0a1a13;font-size:13.5px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;transition:all .2s;box-shadow:0 4px 15px rgba(0,200,150,.2)}
+.mkt-add-btn:active{transform:scale(.98);opacity:.9}
+.mkt-scan-btn{width:100%;padding:12px;border:1px dashed rgba(0,200,150,.3);border-radius:13px;background:rgba(0,200,150,.04);color:var(--green);font-size:12.5px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px}
+.mkt-scan-btn:active{background:rgba(0,200,150,.1);border-color:var(--green)}
+.mkt-item{display:flex;align-items:center;gap:10px;padding:13px 14px;border-bottom:1px solid var(--border);transition:background .15s}
 .mkt-item:last-child{border-bottom:none}
-.mkt-item-img{width:40px;height:40px;border-radius:8px;object-fit:cover;background:var(--s2);flex-shrink:0}
+.mkt-item-img{width:42px;height:42px;border-radius:10px;object-fit:cover;background:var(--s2);flex-shrink:0;border:1px solid var(--border)}
 .mkt-item-info{flex:1;min-width:0}
-.mkt-item-name{font-size:13px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.mkt-item-detail{font-size:11px;color:var(--muted);margin-top:2px}
-.mkt-item-sub{font-size:13px;font-weight:700;color:var(--green);white-space:nowrap}
-.mkt-item-del{width:28px;height:28px;border-radius:50%;border:1px solid var(--border2);background:none;color:var(--red);font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s}
-.mkt-item-del:hover{background:rgba(255,90,90,.12)}
-.mkt-empty{text-align:center;padding:30px 16px;color:var(--muted);font-size:13px}
-.mkt-clear-btn{width:100%;padding:10px;border:1px solid var(--border2);border-radius:11px;background:none;color:var(--muted2);font-size:12px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;margin-top:8px;transition:all .15s}
-.mkt-clear-btn:hover{border-color:var(--red);color:var(--red)}
-.mkt-scan-preview{position:relative;margin-top:8px}
-.mkt-scan-preview img{width:100%;border-radius:10px;display:block}
-.mkt-scan-preview .mkt-scan-close{position:absolute;top:6px;right:6px;width:26px;height:26px;border-radius:50%;border:none;background:rgba(0,0,0,.6);color:#fff;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center}
-.mkt-barcode-info{margin-top:8px;padding:10px 12px;background:var(--s2);border-radius:10px;font-size:12px;color:var(--muted2);display:flex;align-items:center;gap:8px}
+.mkt-item-name{font-size:13.5px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mkt-item-detail{font-size:11px;color:var(--muted);margin-top:3px}
+.mkt-item-sub{font-size:14px;font-weight:800;color:var(--green);white-space:nowrap;font-family:'DM Mono',monospace}
+.mkt-item-del{width:30px;height:30px;border-radius:50%;border:1px solid rgba(255,90,90,.2);background:rgba(255,90,90,.06);color:var(--red);font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .2s}
+.mkt-item-del:active{background:rgba(255,90,90,.2)}
+.mkt-empty{text-align:center;padding:36px 16px;color:var(--muted);font-size:13px;line-height:1.7}
+.mkt-empty-ico{font-size:36px;margin-bottom:8px;opacity:.3}
+.mkt-actions{display:flex;gap:8px;margin-top:10px}
+.mkt-act-btn{flex:1;padding:11px;border:1px solid var(--border2);border-radius:12px;background:none;color:var(--muted2);font-size:11.5px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:center;gap:5px}
+.mkt-act-btn:active{background:var(--s2)}
+.mkt-act-btn.danger{border-color:rgba(255,90,90,.2);color:var(--red)}
+.mkt-act-btn.danger:active{background:rgba(255,90,90,.08)}
+.mkt-act-btn.save{border-color:rgba(0,200,150,.3);color:var(--green)}
+.mkt-act-btn.save:active{background:rgba(0,200,150,.08)}
+.mkt-scan-preview{position:relative;margin-top:4px;border-radius:12px;overflow:hidden}
+.mkt-scan-preview img{width:100%;display:block;max-height:160px;object-fit:cover}
+.mkt-scan-preview .mkt-scan-close{position:absolute;top:6px;right:6px;width:28px;height:28px;border-radius:50%;border:none;background:rgba(0,0,0,.65);color:#fff;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.mkt-barcode-info{padding:10px 12px;background:var(--s2);border-radius:11px;font-size:12px;color:var(--muted2);display:flex;align-items:center;gap:8px}
+/* Histórico */
+.mkt-hist-item{background:var(--s1);border:1px solid var(--border);border-radius:14px;padding:14px 16px;margin-bottom:8px}
+.mkt-hist-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.mkt-hist-date{font-size:12px;font-weight:700;color:var(--text)}
+.mkt-hist-total{font-size:13px;font-weight:800;color:var(--green);font-family:'DM Mono',monospace}
+.mkt-hist-products{display:flex;flex-direction:column;gap:6px}
+.mkt-hist-prod{display:flex;align-items:center;justify-content:space-between;font-size:12px}
+.mkt-hist-prod-name{color:var(--text);font-weight:600;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mkt-hist-prod-price{color:var(--muted2);font-family:'DM Mono',monospace;white-space:nowrap;margin-left:8px}
+.mkt-hist-var{font-size:10px;font-weight:700;padding:2px 7px;border-radius:99px;white-space:nowrap;margin-left:6px}
+.mkt-hist-var.up{background:rgba(255,90,90,.12);color:var(--red)}
+.mkt-hist-var.down{background:rgba(0,200,150,.12);color:var(--green)}
+.mkt-hist-var.eq{background:var(--s2);color:var(--muted)}
+.mkt-hist-del{width:26px;height:26px;border-radius:50%;border:1px solid var(--border2);background:none;color:var(--muted);font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-left:8px}
+@media(max-width:560px){
+  .mkt-hero-total{font-size:24px}
+  .mkt-tabs{gap:4px}
+  .mkt-tabs .plan-sub-tab{font-size:10px !important;padding:7px 6px !important}
+  .mkt-row-inline{flex-direction:column}
+  .mkt-row-inline .mkt-input{max-width:none !important}
+  .mkt-input{font-size:16px;padding:13px 14px}
+  .mkt-add-btn{font-size:14px;padding:14px}
+  .mkt-scan-btn{font-size:13px;padding:13px}
+  .mkt-item{padding:12px 10px;gap:8px}
+  .mkt-item-img{width:38px;height:38px}
+  .mkt-item-name{font-size:13px}
+  .mkt-item-sub{font-size:13px}
+  .mkt-actions{flex-direction:column}
+  .mkt-hist-prod{flex-wrap:wrap;gap:4px}
+}
 </style></head><body>
 <div class="hdr">
   <div class="logo">
@@ -5426,7 +5494,9 @@ document.addEventListener('DOMContentLoaded',function(){
 <script>
 (function(){
   const MKT_KEY='_fin_mkt_list';
+  const HIST_KEY='_fin_mkt_history';
   let _mktItems=JSON.parse(localStorage.getItem(MKT_KEY)||'[]');
+  let _mktHist=JSON.parse(localStorage.getItem(HIST_KEY)||'[]');
   let _mktScanData=null;
 
   /* ── Sub-tabs Outros ── */
@@ -5437,7 +5507,18 @@ document.addEventListener('DOMContentLoaded',function(){
       if(pg) pg.style.display=s===sub?'block':'none';
       if(btn) btn.classList.toggle('on',s===sub);
     });
-    if(sub==='mercado') mktRender();
+    if(sub==='mercado'){ mktRender(); mktRenderHist(); }
+  };
+
+  /* ── Sub-tabs Mercado (Lista/Histórico) ── */
+  window.goMktTab=function(sub){
+    ['lista','historico'].forEach(s=>{
+      const pg=document.getElementById('mktpage-'+s);
+      const btn=document.getElementById('mktsub-'+s);
+      if(pg) pg.style.display=s===sub?'block':'none';
+      if(btn) btn.classList.toggle('on',s===sub);
+    });
+    if(sub==='historico') mktRenderHist();
   };
 
   /* ── Adicionar item ── */
@@ -5481,23 +5562,56 @@ document.addEventListener('DOMContentLoaded',function(){
     showToast('Lista limpa');
   };
 
-  /* ── Renderizar ── */
+  /* ── Salvar compra no histórico ── */
+  window.mktSaveToHistory=function(){
+    if(!_mktItems.length){ showToast('Lista vazia'); return; }
+    let total=0;
+    _mktItems.forEach(i=>{ total+=i.preco*i.qtd; });
+    const entry={
+      id:Date.now(),
+      data:new Date().toISOString(),
+      total:total,
+      itens:_mktItems.map(i=>({nome:i.nome,preco:i.preco,qtd:i.qtd}))
+    };
+    _mktHist.unshift(entry);
+    if(_mktHist.length>50) _mktHist=_mktHist.slice(0,50);
+    localStorage.setItem(HIST_KEY,JSON.stringify(_mktHist));
+    _mktItems=[];
+    _save();
+    mktRender();
+    showToast('✅ Compra salva no histórico');
+    goMktTab('historico');
+  };
+
+  /* ── Remover compra do histórico ── */
+  window.mktDeleteHist=function(id){
+    _mktHist=_mktHist.filter(h=>h.id!==id);
+    localStorage.setItem(HIST_KEY,JSON.stringify(_mktHist));
+    mktRenderHist();
+  };
+
+  /* ── Renderizar lista ── */
   function mktRender(){
     const list=document.getElementById('mkt-list');
-    const empty=document.getElementById('mkt-empty');
     const countEl=document.getElementById('mkt-item-count');
-    const clearBtn=document.getElementById('mkt-clear-btn');
+    const countHero=document.getElementById('mkt-count');
+    const actionsEl=document.getElementById('mkt-actions');
     const totalEl=document.getElementById('mkt-total');
+    const subEl=document.getElementById('mkt-hero-sub');
     if(!list) return;
 
     let total=0;
     _mktItems.forEach(i=>{ total+=i.preco*i.qtd; });
     totalEl.textContent='R$ '+total.toFixed(2).replace('.',',');
-    countEl.textContent=_mktItems.length+' ite'+((_mktItems.length===1)?'m':'ns');
-    clearBtn.style.display=_mktItems.length?'block':'none';
+    const n=_mktItems.length;
+    const cntTxt=n+' ite'+(n===1?'m':'ns');
+    countEl.textContent=cntTxt;
+    countHero.textContent=cntTxt;
+    actionsEl.style.display=n?'flex':'none';
+    subEl.textContent=n?'Toque em "Salvar compra" ao finalizar':'Adicione produtos abaixo';
 
-    if(!_mktItems.length){
-      list.innerHTML='\x3cdiv class="mkt-empty"\x3eNenhum produto adicionado\x3c/div\x3e';
+    if(!n){
+      list.innerHTML='\x3cdiv class="mkt-empty"\x3e\x3cdiv class="mkt-empty-ico"\x3e🛒\x3c/div\x3eNenhum produto adicionado\x3cbr\x3e\x3cspan style="font-size:11px;opacity:.7"\x3eUse o formulário acima\x3c/span\x3e\x3c/div\x3e';
       return;
     }
 
@@ -5507,11 +5621,11 @@ document.addEventListener('DOMContentLoaded',function(){
       const pUnit=item.preco.toFixed(2).replace('.',',');
       const imgTag=item.img
         ?'\x3cimg class="mkt-item-img" src="'+item.img.replace(/"/g,'&quot;')+'"\x3e'
-        :'\x3cdiv class="mkt-item-img" style="display:flex;align-items:center;justify-content:center;font-size:18px"\x3e🛒\x3c/div\x3e';
+        :'\x3cdiv class="mkt-item-img" style="display:flex;align-items:center;justify-content:center;font-size:16px;background:var(--s2)"\x3e🏷️\x3c/div\x3e';
       html+='\x3cdiv class="mkt-item"\x3e'
         +imgTag
         +'\x3cdiv class="mkt-item-info"\x3e'
-        +'\x3cdiv class="mkt-item-name"\x3e'+_escMkt(item.nome)+'\x3c/div\x3e'
+        +'\x3cdiv class="mkt-item-name"\x3e'+_esc(item.nome)+'\x3c/div\x3e'
         +'\x3cdiv class="mkt-item-detail"\x3eR$ '+pUnit+' × '+item.qtd+'\x3c/div\x3e'
         +'\x3c/div\x3e'
         +'\x3cspan class="mkt-item-sub"\x3eR$ '+sub+'\x3c/span\x3e'
@@ -5519,6 +5633,76 @@ document.addEventListener('DOMContentLoaded',function(){
         +'\x3c/div\x3e';
     });
     list.innerHTML=html;
+  }
+
+  /* ── Renderizar histórico com variação de preço ── */
+  function mktRenderHist(){
+    const wrap=document.getElementById('mkt-hist-list');
+    if(!wrap) return;
+    _mktHist=JSON.parse(localStorage.getItem(HIST_KEY)||'[]');
+
+    if(!_mktHist.length){
+      wrap.innerHTML='\x3cdiv class="mkt-empty"\x3e\x3cdiv class="mkt-empty-ico"\x3e📊\x3c/div\x3eNenhuma compra salva ainda\x3cbr\x3e\x3cspan style="font-size:11px;opacity:.7"\x3eFinalize uma compra na aba Lista\x3c/span\x3e\x3c/div\x3e';
+      return;
+    }
+
+    let html='';
+    _mktHist.forEach((entry,idx)=>{
+      const d=new Date(entry.data);
+      const dateStr=d.toLocaleDateString('pt-BR',{day:'2-digit',month:'short',year:'numeric'});
+      const totalStr='R$ '+entry.total.toFixed(2).replace('.',',');
+
+      // Compara com compra anterior (próximo no array = mais antiga)
+      const prev=_mktHist[idx+1]||null;
+      const prevMap={};
+      if(prev) prev.itens.forEach(i=>{ prevMap[i.nome.toLowerCase()]=i.preco; });
+
+      let prodHtml='';
+      entry.itens.forEach(i=>{
+        const pStr='R$ '+i.preco.toFixed(2).replace('.',',')+' ×'+i.qtd;
+        let varTag='';
+        const prevPrice=prevMap[i.nome.toLowerCase()];
+        if(prev && typeof prevPrice==='number'){
+          const diff=((i.preco-prevPrice)/prevPrice*100);
+          if(Math.abs(diff)>=0.5){
+            const cls=diff>0?'up':'down';
+            const sign=diff>0?'+':'';
+            varTag='\x3cspan class="mkt-hist-var '+cls+'"\x3e'+sign+diff.toFixed(1)+'%\x3c/span\x3e';
+          } else {
+            varTag='\x3cspan class="mkt-hist-var eq"\x3e=\x3c/span\x3e';
+          }
+        }
+        prodHtml+='\x3cdiv class="mkt-hist-prod"\x3e'
+          +'\x3cspan class="mkt-hist-prod-name"\x3e'+_esc(i.nome)+'\x3c/span\x3e'
+          +'\x3cspan class="mkt-hist-prod-price"\x3e'+pStr+'\x3c/span\x3e'
+          +varTag
+          +'\x3c/div\x3e';
+      });
+
+      // Variação do total
+      let totalVar='';
+      if(prev){
+        const tdiff=((entry.total-prev.total)/prev.total*100);
+        if(Math.abs(tdiff)>=0.5){
+          const cls=tdiff>0?'up':'down';
+          const sign=tdiff>0?'+':'';
+          totalVar=' \x3cspan class="mkt-hist-var '+cls+'" style="font-size:11px"\x3e'+sign+tdiff.toFixed(1)+'%\x3c/span\x3e';
+        }
+      }
+
+      html+='\x3cdiv class="mkt-hist-item"\x3e'
+        +'\x3cdiv class="mkt-hist-head"\x3e'
+        +'\x3cspan class="mkt-hist-date"\x3e📅 '+dateStr+'\x3c/span\x3e'
+        +'\x3cdiv style="display:flex;align-items:center"\x3e'
+        +'\x3cspan class="mkt-hist-total"\x3e'+totalStr+'\x3c/span\x3e'
+        +totalVar
+        +'\x3cbutton class="mkt-hist-del" onclick="mktDeleteHist('+entry.id+')" title="Excluir"\x3e✕\x3c/button\x3e'
+        +'\x3c/div\x3e'
+        +'\x3c/div\x3e'
+        +'\x3cdiv class="mkt-hist-products"\x3e'+prodHtml+'\x3c/div\x3e'
+        +'\x3c/div\x3e';
+    });
+    wrap.innerHTML=html;
   }
 
   /* ── Scan foto/etiqueta ── */
@@ -5552,8 +5736,8 @@ document.addEventListener('DOMContentLoaded',function(){
 
     if(!('BarcodeDetector' in window)){
       wrap.style.display='flex';
-      codeEl.textContent='—';
-      statusEl.textContent='Seu navegador não suporta leitura de código de barras';
+      codeEl.textContent='\u2014';
+      statusEl.textContent='Navegador não suporta leitura de código';
       return;
     }
     wrap.style.display='flex';
@@ -5570,16 +5754,16 @@ document.addEventListener('DOMContentLoaded',function(){
         codeEl.textContent=codes[0].rawValue;
         statusEl.textContent=codes[0].format.toUpperCase()+' detectado';
       } else {
-        codeEl.textContent='—';
-        statusEl.textContent='Nenhum código encontrado — adicione o preço manual';
+        codeEl.textContent='\u2014';
+        statusEl.textContent='Nenhum código encontrado';
       }
     }catch(e){
-      codeEl.textContent='—';
+      codeEl.textContent='\u2014';
       statusEl.textContent='Erro ao ler código';
     }
   }
 
-  function _escMkt(s){ return String(s).replace(/&/g,'&amp;').replace(/\x3c/g,'&lt;').replace(/\x3e/g,'&gt;').replace(/"/g,'&quot;'); }
+  function _esc(s){ return String(s).replace(/&/g,'&amp;').replace(/\x3c/g,'&lt;').replace(/\x3e/g,'&gt;').replace(/"/g,'&quot;'); }
   function _save(){ localStorage.setItem(MKT_KEY,JSON.stringify(_mktItems)); }
 
   // Enter para adicionar
