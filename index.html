@@ -129,7 +129,7 @@ body{background:var(--bg);color:var(--text);display:flex;flex-direction:column;o
 /* ── CAT CHIPS ── */
 .cat-scroll{display:flex;gap:6px;overflow-x:auto;padding:0 0 10px;margin-bottom:2px}
 .cat-scroll::-webkit-scrollbar{display:none}
-.cat-chip{padding:6px 12px;border-radius:99px;border:1px solid var(--border2);background:none;color:var(--muted);font-size:11.5px;font-family:'DM Sans',sans-serif;cursor:pointer;white-space:nowrap;transition:all .15s;flex-shrink:0;-webkit-user-select:none;min-height:32px}
+.cat-chip{padding:6px 12px;border-radius:99px;border:1px solid var(--border2);background:none;color:var(--muted);font-size:11.5px;font-family:'DM Sans',sans-serif;cursor:pointer;white-space:nowrap;transition:all .15s;flex-shrink:0;-webkit-user-select:none;user-select:none;min-height:32px}
 .cat-chip.on{background:var(--green-bg);border-color:rgba(0,200,150,.3);color:var(--green);font-weight:600}
 
 /* ── TX LIST ── */
@@ -184,7 +184,7 @@ body{background:var(--bg);color:var(--text);display:flex;flex-direction:column;o
 .field input,.field select,.field textarea{
   width:100%;padding:13px 13px;background:var(--s2);border:1px solid var(--border2);
   border-radius:11px;color:var(--text);font-size:16px;font-family:'DM Sans',sans-serif;
-  outline:none;transition:border .15s;-webkit-appearance:none;
+  outline:none;transition:border .15s;-webkit-appearance:none;appearance:none;
 }
 .field input:focus,.field select:focus,.field textarea:focus{border-color:var(--green)}
 .field select option{background:var(--s2)}
@@ -273,7 +273,7 @@ body{background:var(--bg);color:var(--text);display:flex;flex-direction:column;o
 .plan-month-row:last-child{border-bottom:none}
 
 /* ── INPUT RANGE ── */
-input[type=range]{-webkit-appearance:none;width:100%;height:4px;border-radius:99px;outline:none;cursor:pointer;background:var(--s3);accent-color:var(--green)}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:4px;border-radius:99px;outline:none;cursor:pointer;background:var(--s3);accent-color:var(--green)}
 input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:var(--green);cursor:pointer;box-shadow:0 0 6px rgba(0,200,150,.4)}
 
 @keyframes pulse-green{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.45;transform:scale(1.35)}}
@@ -292,7 +292,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
   .page { display:block !important; overflow:visible !important; padding:0 !important; flex:none !important; }
   #page-report { display:block !important; }
   .rep-period-btn { display:none !important; }
-  * { -webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; color-adjust:exact !important; }
+  * { -webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; }
   .card, [style*="border-radius"] { break-inside:avoid; }
   #pdf-header { display:block !important; }
 }
@@ -351,8 +351,8 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
 </div>
 
 <!-- TICKER DE COTAÇÕES -->
-<div id="ticker-wrap" style="overflow:hidden;background:var(--s1);border-bottom:1px solid var(--border);height:38px;display:flex;align-items:center;flex-shrink:0">
-  <div id="ticker-track" style="display:inline-flex;align-items:center;white-space:nowrap;height:100%;will-change:transform"></div>
+<div id="ticker-wrap" style="overflow:hidden;background:var(--s1);border-bottom:1px solid var(--border);height:36px;display:flex;align-items:center;flex-shrink:0">
+  <div id="ticker-track" style="display:inline-flex;align-items:center;white-space:nowrap;height:100%"></div>
 </div>
 
 <!-- NAV TABS -->
@@ -552,7 +552,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
       <div style="background:var(--s2);border:1px solid var(--border2);border-radius:12px;padding:12px 14px;margin-bottom:8px">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
           <span style="font-size:9.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;font-weight:700">De</span>
-          <select id="conv-de" onchange="calcConv()" style="background:var(--s3);border:1px solid var(--border2);border-radius:7px;color:var(--text);font-size:11px;font-family:'DM Sans',sans-serif;font-weight:700;padding:4px 8px;outline:none;cursor:pointer;-webkit-appearance:none;text-align:center;min-width:100px">
+          <select id="conv-de" onchange="calcConv()" style="background:var(--s3);border:1px solid var(--border2);border-radius:7px;color:var(--text);font-size:11px;font-family:'DM Sans',sans-serif;font-weight:700;padding:4px 8px;outline:none;cursor:pointer;-webkit-appearance:none;appearance:none;text-align:center;min-width:100px">
             <optgroup label="Fiduciário">
             <option value="BRL">🇧🇷 BRL — Real</option>
             <option value="USD">🇺🇸 USD — Dólar</option>
@@ -590,7 +590,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
       <div style="background:var(--s2);border:1px solid rgba(91,158,255,.2);border-radius:12px;padding:12px 14px">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
           <span style="font-size:9.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;font-weight:700" data-i18n="cambio.to">Para</span>
-          <select id="conv-para" onchange="calcConv()" style="background:var(--s3);border:1px solid var(--border2);border-radius:7px;color:var(--text);font-size:11px;font-family:'DM Sans',sans-serif;font-weight:700;padding:4px 8px;outline:none;cursor:pointer;-webkit-appearance:none;text-align:center;min-width:100px">
+          <select id="conv-para" onchange="calcConv()" style="background:var(--s3);border:1px solid var(--border2);border-radius:7px;color:var(--text);font-size:11px;font-family:'DM Sans',sans-serif;font-weight:700;padding:4px 8px;outline:none;cursor:pointer;-webkit-appearance:none;appearance:none;text-align:center;min-width:100px">
             <optgroup label="Fiduciário">
             <option value="BRL">🇧🇷 BRL — Real</option>
             <option value="USD" selected>🇺🇸 USD — Dólar</option>
@@ -667,7 +667,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
     <div class="sheet-title" data-i18n="alert.title">Novo alerta de cotação</div>
     <div class="field">
       <label data-i18n="alert.asset">Ativo</label>
-      <select id="al-moeda" onchange="updateAlertLabel()" style="width:100%;padding:13px;background:var(--s2);border:1px solid var(--border2);border-radius:11px;color:var(--text);font-size:16px;font-family:'DM Sans',sans-serif;outline:none;-webkit-appearance:none">
+      <select id="al-moeda" onchange="updateAlertLabel()" style="width:100%;padding:13px;background:var(--s2);border:1px solid var(--border2);border-radius:11px;color:var(--text);font-size:16px;font-family:'DM Sans',sans-serif;outline:none;-webkit-appearance:none;appearance:none">
         <optgroup label="Fiduciário">
         <option value="USD">🇺🇸 USD — Dólar EUA</option>
         <option value="EUR">🇪🇺 EUR — Euro</option>
@@ -4306,93 +4306,131 @@ Inclua: 1)📊 Perfil financeiro com os valores reais 2)🔴 Alertas usando os v
 <!-- ── TICKER DE COTAÇÕES ── -->
 <script>
 (function(){
-  var ITEMS = [
+  const TICKER_ITEMS = [
     {code:'USD',flag:'🇺🇸'},{code:'EUR',flag:'🇪🇺'},{code:'GBP',flag:'🇬🇧'},
     {code:'JPY',flag:'🇯🇵'},{code:'CAD',flag:'🇨🇦'},{code:'CHF',flag:'🇨🇭'},
     {code:'ARS',flag:'🇦🇷'},{code:'CNY',flag:'🇨🇳'},{code:'AUD',flag:'🇦🇺'},
     {code:'BTC',flag:'₿'  },{code:'ETH',flag:'Ξ'  },{code:'SOL',flag:'◎' },
     {code:'BNB',flag:'🟡' },{code:'XRP',flag:'✕'  },{code:'DOGE',flag:'🐕'},
   ];
-  var FB = {USD:5.24,EUR:6.08,GBP:6.82,JPY:0.0349,CAD:3.72,CHF:5.89,ARS:0.0052,CNY:0.72,AUD:3.31,BTC:371000,ETH:11150,SOL:470,BNB:3800,XRP:8.1,DOGE:0.85};
-  var liveRates = {};
 
-  function fmt(v){
-    if(v>=100000) return v.toLocaleString('pt-BR',{maximumFractionDigits:0});
-    if(v>=1) return v.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:4});
-    return v.toLocaleString('pt-BR',{minimumFractionDigits:4,maximumFractionDigits:6});
+  function buildTicker() {
+    const track = document.getElementById('ticker-track');
+    if(!track) return;
+
+    const liveRates = window._getRatesInBRL?.() || {};
+    const rates = Object.keys(liveRates).length > 2
+      ? liveRates
+      : (window._tickerRatesOverride || {});
+
+    const yest = window._getRatesYestInBRL?.() || {};
+    const crypto = window._cryptoRatesInBRL?.()  || {};
+    const all    = {...rates, ...crypto};
+
+    // Só renderiza com dados reais
+    if(Object.keys(all).length <= 2) return;
+
+    const items = TICKER_ITEMS.map(item => {
+      const price = all[item.code]; if(!price) return null;
+      const prev  = yest[item.code];
+      const pct   = prev ? ((price - prev) / prev) * 100 : null;
+      const up    = pct !== null && pct >= 0;
+      const pStr  = price >= 10000
+        ? price.toLocaleString('pt-BR',{maximumFractionDigits:0})
+        : price >= 1
+          ? price.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:4})
+          : price.toLocaleString('pt-BR',{minimumFractionDigits:4,maximumFractionDigits:6});
+      const vStr = pct !== null ? `${up?'▲':'▼'} ${Math.abs(pct).toFixed(2)}%` : '';
+      return {...item, pStr, vStr, up};
+    }).filter(Boolean);
+
+    if(!items.length) return;
+
+    const make = item => `<span class="ticker-item"
+      onclick="goTab('plan');setTimeout(()=>{goPlanTab('cambio');setTimeout(()=>openMoedaSheet('${item.code}'),350)},200)">
+      <span class="ticker-flag">${item.flag}</span>
+      <span style="display:inline-flex;flex-direction:column;line-height:1.2">
+        <span class="ticker-code">${item.code}</span>
+        <span class="ticker-price">R$ ${item.pStr}</span>
+      </span>
+      ${item.vStr?`<span class="ticker-var" style="color:${item.up?'var(--green)':'var(--red)'};background:${item.up?'rgba(0,200,150,.12)':'rgba(255,92,92,.12)'}">${item.vStr}</span>`:''}
+    </span>`;
+
+    const repeated = [...items,...items,...items].map(make).join('');
+    track.innerHTML = repeated;
+
+    requestAnimationFrame(() => {
+      const oneSetW = track.scrollWidth / 3;
+      const sEl = document.getElementById('ticker-keyframe') || document.createElement('style');
+      sEl.id = 'ticker-keyframe';
+      sEl.textContent = `@keyframes tk{from{transform:translateX(0)}to{transform:translateX(-${oneSetW}px)}}`;
+      document.head.appendChild(sEl);
+      const dur = Math.max(15, oneSetW / 50);
+      track.style.animation = `tk ${dur}s linear infinite`;
+    });
   }
 
-  function render(){
-    var track = document.getElementById('ticker-track');
-    if(!track){ setTimeout(render,100); return; }
-    var all = Object.assign({}, FB, liveRates);
-    var yest = (window._getRatesYestInBRL && window._getRatesYestInBRL()) || {};
-    var live = (window._getRatesInBRL && window._getRatesInBRL()) || {};
-    var crypto = (window._cryptoRatesInBRL && window._cryptoRatesInBRL()) || {};
-    Object.assign(all, live, crypto);
+  // Chama imediatamente com dados estáticos (fallback realista Mar/2026)
+  const STATIC_FALLBACK = {USD:5.31,EUR:6.03,GBP:7.08,JPY:0.0334,CAD:3.87,CHF:6.72,ARS:0.0038,CNY:0.77,AUD:3.73,BTC:365000,ETH:11000,SOL:465,BNB:3300,XRP:7.4,DOGE:0.8};
+  window._tickerRatesOverride = STATIC_FALLBACK;
 
-    var html = '';
-    for(var i=0;i<ITEMS.length;i++){
-      var it = ITEMS[i];
-      var p = all[it.code]; if(!p) continue;
-      var prev = yest[it.code];
-      var pct = prev ? ((p-prev)/prev)*100 : null;
-      var up = pct!==null && pct>=0;
-      var badge = pct!==null
-        ? '<span style="font-size:9px;font-weight:700;border-radius:3px;padding:1px 5px;color:'+(up?'var(--green)':'var(--red)')+';background:'+(up?'rgba(0,200,150,.15)':'rgba(255,92,92,.15)')+';">'+(up?'▲':'▼')+' '+Math.abs(pct).toFixed(2)+'%</span>'
-        : '';
-      html += '<span style="display:inline-flex;align-items:center;gap:6px;padding:0 14px;border-right:1px solid var(--border);flex-shrink:0;cursor:pointer;height:38px;transition:background .15s" onmouseover="this.style.background='var(--s2)'" onmouseout="this.style.background=''" onclick="try{goTab('plan');setTimeout(function(){goPlanTab('cambio');setTimeout(function(){openMoedaSheet(''+it.code+'')},350)},200)}catch(e){}">'
-        + '<span style="font-size:13px;line-height:1">'+it.flag+'</span>'
-        + '<span style="display:inline-flex;flex-direction:column;line-height:1.25">'
-          + '<span style="font-size:9.5px;font-weight:700;color:var(--muted2)">'+it.code+'</span>'
-          + '<span style="font-family:'DM Mono',monospace;font-size:11px;font-weight:600;color:var(--text)">R$ '+fmt(p)+'</span>'
-        + '</span>'
-        + badge
-        + '</span>';
+  window._updateTicker = buildTicker;
+
+  // Pausa ao hover
+  document.addEventListener('mouseover', e => {
+    if(e.target.closest('#ticker-track')) {
+      const t = document.getElementById('ticker-track');
+      if(t) t.style.animationPlayState = 'paused';
     }
-    if(!html) return;
+  });
+  document.addEventListener('mouseout', e => {
+    if(e.target.closest('#ticker-track')) {
+      const t = document.getElementById('ticker-track');
+      if(t) t.style.animationPlayState = 'running';
+    }
+  });
 
-    // triplicar para scroll infinito
-    track.innerHTML = html+html+html;
-
-    setTimeout(function(){
-      var W = track.scrollWidth/3;
-      if(!W) return;
-      var s = document.getElementById('_tkf');
-      if(!s){s=document.createElement('style');s.id='_tkf';document.head.appendChild(s);}
-      s.textContent='@keyframes _tk{0%{transform:translateX(0)}100%{transform:translateX(-'+W+'px)}}';
-      track.style.animation='_tk '+Math.max(18,W/55)+'s linear infinite';
-    },50);
+  // Busca cotações reais
+  async function fetchTickerRates() {
+    try {
+      const MOEDAS = ['USD','EUR','GBP','JPY','CAD','CHF','ARS','CNY','AUD','MXN'];
+      const pairs = MOEDAS.map(m=>`${m}-BRL`).join(',');
+      const res = await fetch(`https://economia.awesomeapi.com.br/json/last/${pairs}`);
+      const data = await res.json();
+      const rates = { BRL: 1 };
+      MOEDAS.forEach(code => {
+        const key = `${code}BRL`;
+        if(data[key]) rates[code] = parseFloat(data[key].bid);
+      });
+      return rates;
+    } catch(e) { return null; }
   }
 
-  window._updateTicker = render;
-
-  // hover pause
-  var wrap = document.getElementById('ticker-wrap');
-  if(wrap){
-    wrap.addEventListener('mouseenter',function(){ var t=document.getElementById('ticker-track');if(t)t.style.animationPlayState='paused'; });
-    wrap.addEventListener('mouseleave',function(){ var t=document.getElementById('ticker-track');if(t)t.style.animationPlayState='running'; });
-  }
-
-  // busca cotações reais
-  function fetchLive(){
-    var fiat=['USD','EUR','GBP','JPY','CAD','CHF','ARS','CNY','AUD'];
-    fetch('https://economia.awesomeapi.com.br/json/last/'+fiat.map(function(m){return m+'-BRL';}).join(','))
-      .then(function(r){return r.json();})
-      .then(function(data){
-        fiat.forEach(function(code){
-          var k=code+'BRL';
-          if(data[k]) liveRates[code]=parseFloat(data[k].bid);
+  // Inicia após DOM pronto
+  if(document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+      buildTicker();
+      if(window.loadCotacoes) window.loadCotacoes(false);
+      if(window._fetchCrypto){
+        window._fetchCrypto(false).then(() => {
+          if(window._updateTicker) window._updateTicker();
         });
-        render();
-      }).catch(function(){});
+      }
+      fetchTickerRates().then(r => { if(r){ window._tickerRatesOverride=r; buildTicker(); } });
+    });
+  } else {
+    buildTicker();
+    if(window.loadCotacoes) window.loadCotacoes(false);
+    if(window._fetchCrypto){
+      window._fetchCrypto(false).then(() => {
+        if(window._updateTicker) window._updateTicker();
+      });
+    }
+    fetchTickerRates().then(r => { if(r){ window._tickerRatesOverride=r; buildTicker(); } });
   }
-
-  // roda imediatamente — ticker-track já existe no DOM pois script está no final do body
-  render();
-  fetchLive();
-  setInterval(fetchLive, 60000);
 })();
+
+</script>
 
 </body>
 </html>
