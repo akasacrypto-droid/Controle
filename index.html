@@ -974,6 +974,12 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
 <!-- ── PAGE: OUTROS ── -->
 <div class="page" id="page-outros">
 
+  <!-- SUB-TABS OUTROS -->
+  <div style="display:flex;gap:6px;margin-bottom:12px">
+    <button class="plan-sub-tab on" id="osub-tradutor" onclick="goOutrosTab('tradutor')" style="flex:1">🌐 Tradutor</button>
+    <button class="plan-sub-tab" id="osub-mercado" onclick="goOutrosTab('mercado')" style="flex:1">🛒 Mercado</button>
+  </div>
+
   <!-- ── TRADUTOR ── -->
   <div id="outrospage-tradutor">
 
@@ -1124,6 +1130,61 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
     </div>
 
   </div>
+
+  </div>
+
+  <!-- ── MODO MERCADO ── -->
+  <div id="outrospage-mercado" style="display:none">
+
+    <!-- TOTAL -->
+    <div class="mkt-total-bar">
+      <span class="mkt-total-label">🛒 Total da compra</span>
+      <span class="mkt-total-value" id="mkt-total">R$ 0,00</span>
+    </div>
+
+    <!-- FORMULÁRIO -->
+    <div class="card" style="margin-bottom:12px">
+      <div style="padding:14px">
+        <div class="mkt-form">
+          <!-- Scan foto -->
+          <button class="mkt-scan-btn" onclick="document.getElementById('mkt-scan-input').click()">
+            📸 Escanear etiqueta / código de barras
+          </button>
+          <input type="file" id="mkt-scan-input" accept="image/*" capture="environment" style="display:none" onchange="mktScanImage(this)">
+          <div id="mkt-scan-preview-wrap" style="display:none" class="mkt-scan-preview">
+            <img id="mkt-scan-preview-img">
+            <button class="mkt-scan-close" onclick="mktClearScan()">✕</button>
+          </div>
+          <div id="mkt-barcode-result" class="mkt-barcode-info" style="display:none">
+            <span style="font-size:16px">📦</span>
+            <div>
+              <div id="mkt-barcode-code" style="font-weight:700"></div>
+              <div id="mkt-barcode-status" style="font-size:11px;color:var(--muted)"></div>
+            </div>
+          </div>
+
+          <input class="mkt-input" id="mkt-nome" type="text" placeholder="Nome do produto" autocomplete="off">
+          <div class="mkt-row-inline">
+            <input class="mkt-input" id="mkt-preco" type="number" inputmode="decimal" step="0.01" min="0" placeholder="Preço (R$)">
+            <input class="mkt-input" id="mkt-qtd" type="number" inputmode="numeric" min="1" value="1" placeholder="Qtd" style="max-width:80px">
+          </div>
+          <button class="mkt-add-btn" onclick="mktAddItem()">＋ Adicionar produto</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- LISTA -->
+    <div class="card" id="mkt-list-card">
+      <div class="card-head">
+        <span class="card-title">📋 Lista de compras</span>
+        <span id="mkt-item-count" style="font-size:11px;color:var(--muted)">0 itens</span>
+      </div>
+      <div id="mkt-list">
+        <div class="mkt-empty" id="mkt-empty">Nenhum produto adicionado</div>
+      </div>
+    </div>
+
+    <button class="mkt-clear-btn" id="mkt-clear-btn" onclick="mktClearList()" style="display:none">🗑️ Limpar lista</button>
 
   </div>
 
@@ -2822,6 +2883,37 @@ td{vertical-align:middle}
 tr+tr td{border-top:1px solid #f3f3f3}
 .ftr{padding-top:7px;border-top:1px solid #eee;display:flex;justify-content:space-between;font-size:7.5px;color:#bbb}
 @media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+
+/* ── MODO MERCADO ── */
+.mkt-form{display:flex;flex-direction:column;gap:10px}
+.mkt-input{width:100%;padding:11px 13px;background:var(--s2);border:1px solid var(--border2);border-radius:11px;color:var(--text);font-size:13.5px;font-family:'DM Sans',sans-serif;outline:none;transition:border .15s}
+.mkt-input:focus{border-color:var(--green)}
+.mkt-input::placeholder{color:var(--muted)}
+.mkt-row-inline{display:flex;gap:8px}
+.mkt-row-inline .mkt-input{flex:1}
+.mkt-add-btn{width:100%;padding:12px;border:none;border-radius:12px;background:var(--green);color:#0a1a13;font-size:13px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;transition:opacity .15s}
+.mkt-add-btn:active{opacity:.8}
+.mkt-scan-btn{width:100%;padding:10px;border:1px dashed var(--border2);border-radius:12px;background:none;color:var(--muted2);font-size:12px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:center;gap:6px}
+.mkt-scan-btn:hover{border-color:var(--green);color:var(--green)}
+.mkt-total-bar{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;background:var(--green-bg);border-radius:13px;margin-bottom:12px}
+.mkt-total-label{font-size:13px;color:var(--green);font-weight:700}
+.mkt-total-value{font-size:22px;color:var(--green);font-weight:800;font-family:'DM Sans',sans-serif}
+.mkt-item{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid var(--border);transition:background .15s}
+.mkt-item:last-child{border-bottom:none}
+.mkt-item-img{width:40px;height:40px;border-radius:8px;object-fit:cover;background:var(--s2);flex-shrink:0}
+.mkt-item-info{flex:1;min-width:0}
+.mkt-item-name{font-size:13px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mkt-item-detail{font-size:11px;color:var(--muted);margin-top:2px}
+.mkt-item-sub{font-size:13px;font-weight:700;color:var(--green);white-space:nowrap}
+.mkt-item-del{width:28px;height:28px;border-radius:50%;border:1px solid var(--border2);background:none;color:var(--red);font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s}
+.mkt-item-del:hover{background:rgba(255,90,90,.12)}
+.mkt-empty{text-align:center;padding:30px 16px;color:var(--muted);font-size:13px}
+.mkt-clear-btn{width:100%;padding:10px;border:1px solid var(--border2);border-radius:11px;background:none;color:var(--muted2);font-size:12px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;margin-top:8px;transition:all .15s}
+.mkt-clear-btn:hover{border-color:var(--red);color:var(--red)}
+.mkt-scan-preview{position:relative;margin-top:8px}
+.mkt-scan-preview img{width:100%;border-radius:10px;display:block}
+.mkt-scan-preview .mkt-scan-close{position:absolute;top:6px;right:6px;width:26px;height:26px;border-radius:50%;border:none;background:rgba(0,0,0,.6);color:#fff;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.mkt-barcode-info{margin-top:8px;padding:10px 12px;background:var(--s2);border-radius:10px;font-size:12px;color:var(--muted2);display:flex;align-items:center;gap:8px}
 </style></head><body>
 <div class="hdr">
   <div class="logo">
@@ -5328,6 +5420,178 @@ document.addEventListener('DOMContentLoaded',function(){
   });
 });
 
+</script>
+
+<!-- ── MODO MERCADO ── -->
+<script>
+(function(){
+  const MKT_KEY='_fin_mkt_list';
+  let _mktItems=JSON.parse(localStorage.getItem(MKT_KEY)||'[]');
+  let _mktScanData=null;
+
+  /* ── Sub-tabs Outros ── */
+  window.goOutrosTab=function(sub){
+    ['tradutor','mercado'].forEach(s=>{
+      const pg=document.getElementById('outrospage-'+s);
+      const btn=document.getElementById('osub-'+s);
+      if(pg) pg.style.display=s===sub?'block':'none';
+      if(btn) btn.classList.toggle('on',s===sub);
+    });
+    if(sub==='mercado') mktRender();
+  };
+
+  /* ── Adicionar item ── */
+  window.mktAddItem=function(){
+    const nomeEl=document.getElementById('mkt-nome');
+    const precoEl=document.getElementById('mkt-preco');
+    const qtdEl=document.getElementById('mkt-qtd');
+    const nome=nomeEl.value.trim();
+    const preco=parseFloat(precoEl.value);
+    const qtd=parseInt(qtdEl.value)||1;
+    if(!nome){ showToast('Digite o nome do produto'); nomeEl.focus(); return; }
+    if(!preco||preco<=0){ showToast('Digite um preço válido'); precoEl.focus(); return; }
+    _mktItems.push({
+      id:Date.now(),
+      nome:nome,
+      preco:preco,
+      qtd:Math.max(1,qtd),
+      img:_mktScanData||null,
+      barcode:document.getElementById('mkt-barcode-code').textContent||null
+    });
+    _save();
+    nomeEl.value=''; precoEl.value=''; qtdEl.value='1';
+    mktClearScan();
+    nomeEl.focus();
+    mktRender();
+  };
+
+  /* ── Remover item ── */
+  window.mktRemoveItem=function(id){
+    _mktItems=_mktItems.filter(i=>i.id!==id);
+    _save();
+    mktRender();
+  };
+
+  /* ── Limpar lista ── */
+  window.mktClearList=function(){
+    if(!_mktItems.length) return;
+    _mktItems=[];
+    _save();
+    mktRender();
+    showToast('Lista limpa');
+  };
+
+  /* ── Renderizar ── */
+  function mktRender(){
+    const list=document.getElementById('mkt-list');
+    const empty=document.getElementById('mkt-empty');
+    const countEl=document.getElementById('mkt-item-count');
+    const clearBtn=document.getElementById('mkt-clear-btn');
+    const totalEl=document.getElementById('mkt-total');
+    if(!list) return;
+
+    let total=0;
+    _mktItems.forEach(i=>{ total+=i.preco*i.qtd; });
+    totalEl.textContent='R$ '+total.toFixed(2).replace('.',',');
+    countEl.textContent=_mktItems.length+' ite'+((_mktItems.length===1)?'m':'ns');
+    clearBtn.style.display=_mktItems.length?'block':'none';
+
+    if(!_mktItems.length){
+      list.innerHTML='\x3cdiv class="mkt-empty"\x3eNenhum produto adicionado\x3c/div\x3e';
+      return;
+    }
+
+    let html='';
+    _mktItems.forEach(item=>{
+      const sub=(item.preco*item.qtd).toFixed(2).replace('.',',');
+      const pUnit=item.preco.toFixed(2).replace('.',',');
+      const imgTag=item.img
+        ?'\x3cimg class="mkt-item-img" src="'+item.img.replace(/"/g,'&quot;')+'"\x3e'
+        :'\x3cdiv class="mkt-item-img" style="display:flex;align-items:center;justify-content:center;font-size:18px"\x3e🛒\x3c/div\x3e';
+      html+='\x3cdiv class="mkt-item"\x3e'
+        +imgTag
+        +'\x3cdiv class="mkt-item-info"\x3e'
+        +'\x3cdiv class="mkt-item-name"\x3e'+_escMkt(item.nome)+'\x3c/div\x3e'
+        +'\x3cdiv class="mkt-item-detail"\x3eR$ '+pUnit+' × '+item.qtd+'\x3c/div\x3e'
+        +'\x3c/div\x3e'
+        +'\x3cspan class="mkt-item-sub"\x3eR$ '+sub+'\x3c/span\x3e'
+        +'\x3cbutton class="mkt-item-del" onclick="mktRemoveItem('+item.id+')"\x3e✕\x3c/button\x3e'
+        +'\x3c/div\x3e';
+    });
+    list.innerHTML=html;
+  }
+
+  /* ── Scan foto/etiqueta ── */
+  window.mktScanImage=function(input){
+    const file=input.files&&input.files[0];
+    if(!file) return;
+    const reader=new FileReader();
+    reader.onload=function(e){
+      _mktScanData=e.target.result;
+      document.getElementById('mkt-scan-preview-img').src=_mktScanData;
+      document.getElementById('mkt-scan-preview-wrap').style.display='block';
+      _tryBarcodeScan(_mktScanData);
+    };
+    reader.readAsDataURL(file);
+    input.value='';
+  };
+
+  window.mktClearScan=function(){
+    _mktScanData=null;
+    document.getElementById('mkt-scan-preview-wrap').style.display='none';
+    document.getElementById('mkt-barcode-result').style.display='none';
+    document.getElementById('mkt-barcode-code').textContent='';
+    document.getElementById('mkt-barcode-status').textContent='';
+  };
+
+  /* ── Detecção de código de barras (BarcodeDetector API) ── */
+  async function _tryBarcodeScan(dataUrl){
+    const codeEl=document.getElementById('mkt-barcode-code');
+    const statusEl=document.getElementById('mkt-barcode-status');
+    const wrap=document.getElementById('mkt-barcode-result');
+
+    if(!('BarcodeDetector' in window)){
+      wrap.style.display='flex';
+      codeEl.textContent='—';
+      statusEl.textContent='Seu navegador não suporta leitura de código de barras';
+      return;
+    }
+    wrap.style.display='flex';
+    codeEl.textContent='...';
+    statusEl.textContent='Analisando imagem...';
+
+    try{
+      const img=new Image();
+      img.src=dataUrl;
+      await new Promise((ok,fail)=>{ img.onload=ok; img.onerror=fail; });
+      const detector=new BarcodeDetector({formats:['ean_13','ean_8','upc_a','upc_e','code_128','code_39','qr_code']});
+      const codes=await detector.detect(img);
+      if(codes.length){
+        codeEl.textContent=codes[0].rawValue;
+        statusEl.textContent=codes[0].format.toUpperCase()+' detectado';
+      } else {
+        codeEl.textContent='—';
+        statusEl.textContent='Nenhum código encontrado — adicione o preço manual';
+      }
+    }catch(e){
+      codeEl.textContent='—';
+      statusEl.textContent='Erro ao ler código';
+    }
+  }
+
+  function _escMkt(s){ return String(s).replace(/&/g,'&amp;').replace(/\x3c/g,'&lt;').replace(/\x3e/g,'&gt;').replace(/"/g,'&quot;'); }
+  function _save(){ localStorage.setItem(MKT_KEY,JSON.stringify(_mktItems)); }
+
+  // Enter para adicionar
+  document.addEventListener('DOMContentLoaded',function(){
+    ['mkt-nome','mkt-preco','mkt-qtd'].forEach(id=>{
+      const el=document.getElementById(id);
+      if(el) el.addEventListener('keydown',function(e){ if(e.key==='Enter'){ e.preventDefault(); mktAddItem(); } });
+    });
+    mktRender();
+  });
+  if(document.readyState!=='loading'){ setTimeout(mktRender,100); }
+})();
 </script>
 
 </body>
