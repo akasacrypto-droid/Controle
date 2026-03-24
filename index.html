@@ -307,21 +307,28 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
   .nav-tab .tab-ico{font-size:18px}
 }
 @media(min-width:900px){
-  body{max-width:1100px;margin:0 auto}
-  .fab{right:calc((100vw - 1100px)/2 + 16px)}
+  body{max-width:none;margin:0}
+  .fab{right:max(16px,var(--sr))}
   .nav-tab{font-size:12px;padding:12px 10px 10px}
   .nav-tab .tab-ico{font-size:20px}
-  .topbar{padding:calc(var(--st)+14px) 28px 14px}
-  .page{padding:20px 28px calc(var(--sb) + 80px)}
-  #page-report,#page-txs,#page-plan,#page-cfg,#page-notif{max-width:780px;margin-left:auto;margin-right:auto}
+  .topbar{padding:calc(var(--st)+14px) 32px 14px}
+  .page{padding:20px max(28px,var(--sl)) calc(var(--sb) + 80px) max(28px,var(--sr))}
+  #page-report,#page-txs,#page-plan,#page-cfg,#page-notif{max-width:1320px;margin-left:auto;margin-right:auto;width:100%}
   .metrics{grid-template-columns:repeat(4,1fr)}
   .plan-sub-tab{font-size:13px;padding:9px 24px}
   .tx-item{padding:14px 18px;gap:14px}
 }
 @media(min-width:1200px){
-  body{max-width:1280px}
-  .fab{right:calc((100vw - 1280px)/2 + 20px)}
-  #page-report,#page-txs,#page-plan{max-width:900px}
+  #page-report,#page-txs,#page-plan,#page-cfg,#page-notif{max-width:1500px}
+  .page{padding:22px max(36px,var(--sl)) calc(var(--sb) + 84px) max(36px,var(--sr))}
+}
+@media(max-width:560px){
+  #online-badge{display:none !important}
+  #month-label{min-width:auto;font-size:10px}
+  .topbar{gap:4px}
+  .topbar-right{gap:4px}
+  .mnav-btn{width:28px;height:28px}
+  .logo-txt{max-width:110px}
 }
 </style>
 </head>
@@ -583,7 +590,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
 
       <!-- Botão trocar -->
       <div style="display:flex;justify-content:center;margin-bottom:8px">
-        <button onclick="swapConv()" style="width:36px;height:36px;border-radius:50%;background:var(--s3);border:1px solid var(--border2);color:var(--muted2);font-size:16px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:transform .2s" onactive="this.style.transform='rotate(180deg)'">⇅</button>
+        <button onclick="swapConv()" style="width:36px;height:36px;border-radius:50%;background:var(--s3);border:1px solid var(--border2);color:var(--muted2);font-size:16px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:transform .2s" onmousedown="this.style.transform='rotate(180deg)'" onmouseup="this.style.transform='rotate(0deg)'" onmouseleave="this.style.transform='rotate(0deg)'">⇅</button>
       </div>
 
       <!-- Campo PARA -->
@@ -1110,6 +1117,15 @@ function soundDelete(){playTone(300,'sawtooth',0.22,0.1,0,80);}
 function soundEdit(){playTone(800,'square',0.04,0.07,0);playTone(600,'square',0.04,0.05,0.05);}
 function soundNotif(){playTone(880,'sine',0.09,0.14,0);playTone(880,'sine',0.09,0.14,0.14);playTone(1100,'sine',0.14,0.17,0.28);}
 function soundSave(){playTone(500,'sine',0.09,0.11,0);playTone(700,'sine',0.11,0.14,0.1);}
+function mobileBuzz(pattern=[200,80,300]){
+  try{
+    if(navigator.vibrate) navigator.vibrate(pattern);
+  }catch(e){}
+}
+function alertFeedbackStrong(){
+  if(canSound()) soundNotif();
+  mobileBuzz([250,90,250,90,450]);
+}
 
 let now=new Date(),curY=now.getFullYear(),curM=now.getMonth();
 let txData=JSON.parse(localStorage.getItem('fin_mob_tx')||'[]');
@@ -1124,6 +1140,84 @@ function prevKey(){let m=curM-1,y=curY;if(m<0){m=11;y--}return`${y}-${m}`}
 function save(){localStorage.setItem('fin_mob_tx',JSON.stringify(txData))}
 function fmt(v){return'R$ '+Math.abs(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}
 function fmtS(v){if(v>=1000)return'R$'+(v/1000).toFixed(1)+'k';return'R$'+Math.round(v).toLocaleString('pt-BR')}
+
+function genTxId(){return Date.now()+Math.floor(Math.random()*1e6)}
+function normText(s){
+  return String(s||'')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .toLowerCase()
+    .replace(/[^\w\s]/g,' ')
+    .replace(/\s+/g,' ')
+    .trim();
+}
+function normDesc(s){return normText(s).slice(0,80)}
+function parseMoneyBR(v){
+  if(v===null||v===undefined)return NaN;
+  const raw=String(v).trim();
+  if(!raw)return NaN;
+  const clean=raw.replace(/[^\d,.\-]/g,'');
+  // 1.234,56 -> 1234.56 | 1234.56 -> 1234.56
+  if(clean.includes(',')&&clean.includes('.')) return parseFloat(clean.replace(/\./g,'').replace(',','.'));
+  if(clean.includes(',')) return parseFloat(clean.replace(',','.'));
+  return parseFloat(clean);
+}
+function parseCSVRow(line){
+  const out=[]; let cur=''; let q=false;
+  for(let i=0;i<line.length;i++){
+    const ch=line[i];
+    if(ch==='"'){
+      if(q&&line[i+1]==='"'){cur+='"';i++;}
+      else q=!q;
+    }else if(ch===','&&!q){
+      out.push(cur); cur='';
+    }else cur+=ch;
+  }
+  out.push(cur);
+  return out.map(v=>v.trim());
+}
+function normalizeMonthKey(monthRaw,idRaw){
+  const m=String(monthRaw||'').trim();
+  if(/^\d{4}-\d{1,2}$/.test(m)){
+    const [y,mm]=m.split('-').map(Number);
+    return `${y}-${Math.max(0,Math.min(11,mm))}`;
+  }
+  const ts=Number(idRaw);
+  if(Number.isFinite(ts)&&ts>0){
+    const d=new Date(ts);
+    if(!isNaN(d.getTime())) return `${d.getFullYear()}-${d.getMonth()}`;
+  }
+  return curKey();
+}
+function txFingerprint(tx){
+  const month=normalizeMonthKey(tx.month,tx.id);
+  const type=tx.type==='income'?'income':'expense';
+  const val=Math.round((Math.abs(Number(tx.val)||0))*100);
+  return `${month}|${type}|${val}|${normDesc(tx.desc)}`;
+}
+function dedupeTxList(list,existing){
+  const keep=[]; let dup=0;
+  const seen=new Set((existing||[]).map(txFingerprint));
+  const local=new Set();
+  list.forEach(tx=>{
+    const fp=txFingerprint(tx);
+    if(seen.has(fp)||local.has(fp)){dup++;return;}
+    local.add(fp); keep.push(tx);
+  });
+  return {keep,dup};
+}
+function normalizeImportedTx(raw){
+  if(!raw||typeof raw!=='object') return null;
+  const desc=String(raw.desc??raw.description??raw.nome??'').trim().slice(0,80);
+  const valNum=parseMoneyBR(raw.val??raw.value??raw.valor);
+  if(!desc||!Number.isFinite(valNum)||Math.abs(valNum)<=0) return null;
+  const typeRaw=String(raw.type||'').toLowerCase();
+  const type=(typeRaw==='income'||typeRaw==='expense')?typeRaw:(valNum<0?'expense':'income');
+  const val=Math.abs(valNum);
+  const month=normalizeMonthKey(raw.month,raw.id||raw.date||raw.data);
+  const cat=String(raw.cat||raw.categoria||guessCategory(desc,type)).trim()||guessCategory(desc,type);
+  const id=Number(raw.id)||genTxId();
+  return {id,month,desc,val,type,cat};
+}
 
 /* ── TOAST ── */
 function showToast(msg,dur=2500){
@@ -1201,7 +1295,7 @@ function addTx(){
   const val=parseFloat(document.getElementById('f-val').value);
   const cat=document.getElementById('f-cat').value;
   if(!desc||isNaN(val)||val<=0){showToast(t('toast.fill'));return}
-  txData.push({id:Date.now(),month:curKey(),desc,val,type:sheetType,cat});
+  txData.push({id:genTxId(),month:curKey(),desc,val,type:sheetType,cat});
   save();closeSheet();render();
   if(sheetType==='income')soundIncome();else soundExpense();
   showToast(t('toast.added'));
@@ -1380,10 +1474,14 @@ function importData(event){
         if(Array.isArray(parsed.budget))importedBudget=parsed.budget;
       }else{showToast(t('toast.file.invalid'));return}
 
-      pendingImport={txs:imported,goals:importedGoals,budget:importedBudget};
+      const normalized=imported.map(normalizeImportedTx).filter(Boolean);
+      // Pré-deduplica o próprio arquivo importado para evitar registros repetidos.
+      const pre=dedupeTxList(normalized,[]);
+      pendingImport={txs:pre.keep,goals:importedGoals,budget:importedBudget,dupsInFile:pre.dup};
       const el=document.getElementById('import-count');
       const parts=[];
-      if(imported.length)parts.push(imported.length+' lançamentos');
+      if(pre.keep.length)parts.push(pre.keep.length+' lançamentos');
+      if(pre.dup)parts.push(pre.dup+' duplicados no arquivo');
       if(importedGoals&&importedGoals.length)parts.push(importedGoals.length+' metas');
       if(importedBudget&&importedBudget.length)parts.push(importedBudget.length+' envelopes');
       if(el)el.textContent=parts.join(', ')||'0';
@@ -1398,18 +1496,21 @@ function importData(event){
 let pendingImport=null;
 function confirmImport(mode){
   if(!pendingImport)return;
-  const{txs,goals,budget}=pendingImport;
+  const{txs,goals,budget,dupsInFile}=pendingImport;
   if(mode==='replace'){
-    txData=txs;
+    // Replace também deduplica para manter base limpa.
+    txData=dedupeTxList(txs,[]).keep;
     if(goals)goalData=goals;
     if(budget)budgetItems=budget;
+    if(dupsInFile) showToast(`ℹ️ ${dupsInFile} duplicados ignorados no arquivo`);
   }else{
-    const existingIds=new Set(txData.map(t=>t.id));
-    const newOnes=txs.filter(t=>!existingIds.has(t.id));
+    const merged=dedupeTxList(txs,txData);
+    const newOnes=merged.keep;
     txData=[...txData,...newOnes];
     if(goals){const eG=new Set(goalData.map(g=>g.id));goalData=[...goalData,...goals.filter(g=>!eG.has(g.id))]}
     if(budget){const eB=new Set(budgetItems.map(b=>b.id));budgetItems=[...budgetItems,...budget.filter(b=>!eB.has(b.id))]}
-    showToast(`✅ ${newOnes.length} ${t('import.txs.added')}`);
+    const ignored=(dupsInFile||0)+merged.dup;
+    showToast(`✅ ${newOnes.length} ${t('import.txs.added')}${ignored?` · ${ignored} duplicados ignorados`:''}`);
   }
   pendingImport=null;
   saveGoals();saveBudgetData();
@@ -1832,6 +1933,33 @@ function addToGoal(id){
 function delGoal(id){
   goalData=goalData.filter(x=>x.id!==id);saveGoals();renderGoals();showToast(t('toast.goal.removed'));
 }
+function avgMonthlySurplus(lastN=3){
+  let y=curY,m=curM,tot=0,cnt=0;
+  for(let i=0;i<lastN;i++){
+    const key=`${y}-${m}`;
+    const monthTx=txData.filter(t=>t.month===key);
+    if(monthTx.length){
+      const inc=monthTx.filter(t=>t.type==='income').reduce((s,t)=>s+t.val,0);
+      const exp=monthTx.filter(t=>t.type==='expense').reduce((s,t)=>s+t.val,0);
+      tot+=Math.max(0,inc-exp);
+      cnt++;
+    }
+    m--; if(m<0){m=11;y--;}
+  }
+  return cnt?tot/cnt:0;
+}
+function autoWeeklyGoal(g){
+  const left=Math.max(0,(g.target||0)-(g.saved||0));
+  if(left<=0)return null;
+  const avgSurplus=avgMonthlySurplus(3);
+  // Prazo automático: metas menores em menos semanas, maiores em mais semanas.
+  const targetWeeks=left<=1000?8:left<=5000?16:26;
+  const byTarget=left/targetWeeks;
+  const byHistory=avgSurplus>0?(avgSurplus/4):byTarget;
+  const weekly=Math.max(5,(byTarget*0.7)+(byHistory*0.3));
+  const estWeeks=Math.ceil(left/weekly);
+  return {weekly,monthly:weekly*4.33,estWeeks};
+}
 function renderGoals(){
   if(!window.t){setTimeout(renderGoals,50);return;}
   const el=document.getElementById('goals-list');
@@ -1846,6 +1974,7 @@ function renderGoals(){
     const pct=g.target>0?Math.min(100,(g.saved/g.target)*100):0;
     const done=pct>=100;
     const color=done?'var(--green)':pct>60?'var(--blue)':pct>30?'var(--amber)':'var(--muted2)';
+    const sug=autoWeeklyGoal(g);
     return`<div style="background:var(--s1);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:10px">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
         <div style="display:flex;align-items:center;gap:10px">
@@ -1863,6 +1992,10 @@ function renderGoals(){
       <div style="height:8px;background:var(--border);border-radius:99px;overflow:hidden;margin-bottom:10px">
         <div style="height:8px;border-radius:99px;background:${color};width:${pct.toFixed(0)}%;transition:width .7s ease"></div>
       </div>
+      ${sug?`<div style="font-size:10.5px;color:var(--muted2);margin-bottom:10px">
+        💡 Sugestão automática: guardar <b style="color:var(--text)">${fmt(sug.weekly).replace('R$ ','R$ ')}</b>/semana
+        <span style="color:var(--muted)">(~${fmt(sug.monthly)} por mês · ${sug.estWeeks} semanas)</span>
+      </div>`:''}
       <div style="display:flex;justify-content:space-between;align-items:center">
         <div style="font-size:11px;color:var(--muted)">${done?'✅ Meta atingida!':'Faltam '+fmt(g.target-g.saved)}</div>
         <div style="display:flex;gap:6px">
@@ -2104,7 +2237,7 @@ function importNubankCSV(event){
       }
 
       // Parse columns from header
-      const cols=lines[0].split(',').map(c=>c.trim().toLowerCase().replace(/['"]/g,''));
+      const cols=parseCSVRow(lines[0]).map(c=>c.trim().toLowerCase().replace(/['"]/g,''));
       const iDate=cols.findIndex(c=>c.includes('data'));
       const iVal=cols.findIndex(c=>c.includes('valor'));
       const iDesc=cols.findIndex(c=>c.includes('descri')||c.includes('title')||c.includes('título'));
@@ -2112,25 +2245,34 @@ function importNubankCSV(event){
       if(iDate<0||iVal<0){showToast(t('toast.file.nocols'));return}
 
       let imported=0,skipped=0;
+      const toAdd=[];
+      const existingSet=new Set(txData.map(txFingerprint));
+      const inFileSet=new Set();
 
       lines.slice(1).forEach(line=>{
         if(!line.trim())return;
-        // Split respecting quotes
-        const raw=line.split(',');
-        if(raw.length<3)return;
+        const raw=parseCSVRow(line);
+        if(raw.length<2)return;
 
         const dateRaw=(raw[iDate]||'').replace(/['"]/g,'').trim();
         const valRaw=(raw[iVal]||'').replace(/['"]/g,'').trim();
         // Description may contain commas — join remaining cols
-        const descRaw=iDesc>=0?(raw[iDesc]||'').replace(/['"]/g,'').trim():raw.slice(iDesc>=0?iDesc:3).join(' ').replace(/['"]/g,'').trim();
+        const descRaw=iDesc>=0
+          ? (raw[iDesc]||'').replace(/['"]/g,'').trim()
+          : raw.slice(Math.max(0,iVal+1)).join(' ').replace(/['"]/g,'').trim();
 
-        // Parse date DD/MM/YYYY
+        // Parse date DD/MM/YYYY (fallback YYYY-MM-DD)
+        let month=null;
         const dm=dateRaw.match(/(\d{2})\/(\d{2})\/(\d{4})/);
-        if(!dm)return;
-        const month=`${dm[3]}-${parseInt(dm[2])-1}`; // year-monthIndex
+        if(dm) month=`${dm[3]}-${parseInt(dm[2])-1}`;
+        else{
+          const iso=dateRaw.match(/(\d{4})-(\d{2})-(\d{2})/);
+          if(iso) month=`${iso[1]}-${parseInt(iso[2])-1}`;
+        }
+        if(!month)return;
 
         // Parse value — negative = expense, positive = income
-        const amount=parseFloat(valRaw.replace(',','.'));
+        const amount=parseMoneyBR(valRaw);
         if(isNaN(amount)||amount===0)return;
 
         const type=amount<0?'expense':'income';
@@ -2153,21 +2295,25 @@ function importNubankCSV(event){
         }
         desc=desc.trim().slice(0,50);
 
-        // Skip duplicates
-        const isDup=txData.some(t=>t.month===month&&t.desc===desc&&Math.abs(t.val-val)<0.01&&t.type===type);
-        if(isDup){skipped++;return}
-
         const cat=guessCategory(desc,type);
-        txData.push({id:Date.now()+Math.random(),month,desc,val,type,cat});
-        imported++;
+        const tx={id:genTxId(),month,desc,val,type,cat};
+        const fp=txFingerprint(tx);
+        if(existingSet.has(fp)||inFileSet.has(fp)){skipped++;return}
+        inFileSet.add(fp);
+        toAdd.push(tx);
       });
+
+      if(toAdd.length){
+        txData.push(...toAdd);
+        imported=toAdd.length;
+      }
 
       if(!imported&&!skipped){showToast(t('toast.file.none'));event.target.value='';return}
       save();
 
       // Navigate to most recent imported month
       if(imported>0){
-        const importedTxs=txData.slice(-imported);
+        const importedTxs=toAdd;
         const months=[...new Set(importedTxs.map(t=>t.month))].sort().reverse();
         if(months[0]){const[y,m]=months[0].split('-').map(Number);curY=y;curM=m}
       }
@@ -2250,6 +2396,12 @@ function parseTextInput(raw){
 function guessCategory(desc,type){
   if(type==='income')return'Salário';
   const d=desc.toLowerCase();
+  // Mapeamento mais agressivo para CSV bancário/descrições de extrato
+  if(/uber trip|99app|posto|shell box|ipiranga|sem parar|estapar/.test(d))return'Transporte';
+  if(/mercado livre|amazon|shopee|magalu|americanas|aliexpress/.test(d))return'Roupas';
+  if(/ifood|rappi|aiqfome|delivery/.test(d))return'Alimentação';
+  if(/pix\s*(enviado|transferencia enviada|transferência enviada)|ted enviada|doc enviada/.test(d))return'Outros';
+  if(/pix\s*(recebido|transferencia recebida|transferência recebida)|ted recebida|doc recebida|estorno/.test(d))return'Salário';
   if(/aluguel|condomínio|iptu|agua|água|luz|energia|gás|gas|internet|tv|seguro|vero|claro|vivo|tim|oi|celular|telefone|boleto/.test(d))return d.includes('internet')||d.includes('vero')||d.includes('claro')||d.includes('vivo')||d.includes('tim')||d.includes('oi')||d.includes('celular')?'Contas':'Moradia';
   if(/mercado|supermercado|ifood|ifd|rappi|restaurante|lanche|pizza|padaria|café|comida|burger|mcdonalds|subway|giraffas|habib/.test(d))return'Alimentação';
   if(/uber|99|ônibus|metro|gasolina|combustível|estacionamento|brt|shell|posto|petrobras/.test(d))return'Transporte';
@@ -2615,12 +2767,26 @@ tr+tr td{border-top:1px solid #f3f3f3}
           title, body, moeda:a.moeda, cond:a.cond,
           valor:a.valor, rateNow:rate, time:Date.now()
         });
+        alertFeedbackStrong();
         showToast(`🔔 ${title}`);
         // Notificação do sistema
         if('Notification' in window && Notification.permission==='granted'){
-          new Notification(`💰 Controle+ — ${title}`,{
-            body, tag:`alert-${a.id}`, requireInteraction:true
-          });
+          if('serviceWorker' in navigator){
+            navigator.serviceWorker.ready.then(reg=>{
+              reg.showNotification(`💰 Controle+ — ${title}`,{
+                body,
+                tag:`alert-${a.id}`,
+                renotify:true,
+                requireInteraction:true,
+                vibrate:[300,120,300,120,500],
+                silent:false
+              });
+            }).catch(()=>{});
+          } else {
+            new Notification(`💰 Controle+ — ${title}`,{
+              body, tag:`alert-${a.id}`, requireInteraction:true
+            });
+          }
         }
       }
     });
@@ -2641,6 +2807,7 @@ tr+tr td{border-top:1px solid #f3f3f3}
         saveAlerts();
         renderAlerts();
         e.data.triggered?.forEach(a=>{
+          alertFeedbackStrong();
           showToast(`🔔 ${a.moeda} ${a.cond==='acima'?'▲':'▼'} R$ ${a.valor.toFixed(2)} — R$ ${a.rateNow?.toFixed(4)||''}`);
         });
       }
@@ -4067,6 +4234,9 @@ tr+tr td{border-top:1px solid #f3f3f3}
 
       await navigator.serviceWorker.ready;
       syncAlerts();
+      if(navigator.serviceWorker.controller){
+        navigator.serviceWorker.controller.postMessage({type:'START_ALERT_CHECK'});
+      }
 
       // Tenta registrar Periodic Background Sync (PWA instalada no Android)
       try {
@@ -4077,14 +4247,14 @@ tr+tr td{border-top:1px solid #f3f3f3}
         }
       } catch(e){}
 
-      // ── FALLBACK: enquanto o app está ABERTO, envia ping a cada 3min ──
+      // ── FALLBACK: enquanto o app está ABERTO, envia ping a cada 60s ──
       // Isso garante que o SW verifique mesmo sem Periodic Sync
       setInterval(()=>{
         if(navigator.serviceWorker.controller){
           syncAlerts(); // atualiza alertas antes de checar
           navigator.serviceWorker.controller.postMessage({type:'PING'});
         }
-      }, 3 * 60 * 1000);
+      }, 60 * 1000);
 
     } catch(e){ console.warn('SW:', e); }
   }
@@ -4107,6 +4277,7 @@ tr+tr td{border-top:1px solid #f3f3f3}
       localStorage.setItem('_fin_alerts', JSON.stringify(e.data.allAlerts || []));
       if(window._reloadAlertsFromStorage) window._reloadAlertsFromStorage();
       e.data.triggered?.forEach(a => {
+        alertFeedbackStrong();
         const ico = a.cond==='acima'?'▲':'▼';
         const title = `Alerta ${a.moeda} ${ico} R$ ${a.valor.toFixed(2)}`;
         const body  = `Cotação atual: R$ ${Number(a.rateNow).toLocaleString('pt-BR',{minimumFractionDigits:4,maximumFractionDigits:4})}`;
