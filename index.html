@@ -2894,14 +2894,13 @@ tr+tr td{border-top:1px solid #f3f3f3}
   async function fetchRates(force){
     if(!force && Object.keys(ratesInBRL).length > 1 && Date.now()-lastFetch < 55000) return;
     try {
-      const syms  = MOEDAS.map(m=>m.code).join(',');
       const pairs = MOEDAS.map(m=>`${m.code}-BRL`).join(',');
-      const [resAwe, resYest] = await Promise.all([
+      // Busca cotação atual + ontem via awesomeapi (CORS liberado)
+      const [resHoje, resYest] = await Promise.all([
         fetch(`https://economia.awesomeapi.com.br/json/last/${pairs}`),
-        fetch(`https://api.frankfurter.app/${daysAgo(2)}?from=BRL&to=${syms}`)
+        fetch(`https://economia.awesomeapi.com.br/json/daily/${MOEDAS[0].code}-BRL/2`)
       ]);
-      const awe  = await resAwe.json();
-      const yest = await resYest.json();
+      const awe  = await resHoje.json();
 
       // Atualiza in-place para não quebrar referências
       Object.keys(ratesInBRL).forEach(k=>{ if(k!=='BRL') delete ratesInBRL[k]; });
@@ -2915,16 +2914,31 @@ tr+tr td{border-top:1px solid #f3f3f3}
         Object.entries(cr).forEach(([k,v])=>{ ratesInBRL[k]=v; });
       }
 
+      // Busca ontem para cada moeda individualmente (awesomeapi suporta)
       ratesYestInBRL = { BRL: 1 };
-      if(yest.rates) Object.entries(yest.rates).forEach(([k,v]) => { ratesYestInBRL[k] = 1/v; });
+      try {
+        const yestResults = await Promise.all(
+          MOEDAS.map(m => fetch(`https://economia.awesomeapi.com.br/json/daily/${m.code}-BRL/2`).then(r=>r.json()).catch(()=>null))
+        );
+        MOEDAS.forEach((m, i) => {
+          const data = yestResults[i];
+          if(data && data[1]) ratesYestInBRL[m.code] = parseFloat(data[1].bid);
+          else if(data && data[0]) ratesYestInBRL[m.code] = parseFloat(data[0].bid);
+        });
+      } catch(ey){}
+
       lastFetch = Date.now();
     } catch(e){
+      // Fallback: tenta só cotação atual sem ontem
       try {
-        const syms = MOEDAS.map(m=>m.code).join(',');
-        const res = await fetch(`https://api.frankfurter.app/latest?from=BRL&to=${syms}`);
+        const pairs = MOEDAS.map(m=>`${m.code}-BRL`).join(',');
+        const res  = await fetch(`https://economia.awesomeapi.com.br/json/last/${pairs}`);
         const data = await res.json();
         Object.keys(ratesInBRL).forEach(k=>{ if(k!=='BRL') delete ratesInBRL[k]; });
-        Object.entries(data.rates).forEach(([k,v]) => { ratesInBRL[k] = 1/v; });
+        MOEDAS.forEach(m => {
+          const key = `${m.code}BRL`;
+          if(data[key]) ratesInBRL[m.code] = parseFloat(data[key].bid);
+        });
         lastFetch = Date.now();
       } catch(e2){}
     }
@@ -4314,29 +4328,35 @@ Inclua: 1)📊 Perfil financeiro com os valores reais 2)🔴 Alertas usando os v
     {code:'BNB',flag:'🟡' },{code:'XRP',flag:'✕'  },{code:'DOGE',flag:'🐕'},
   ];
 
+  const STATIC_FALLBACK = {USD:5.73,EUR:6.22,GBP:7.43,JPY:0.0382,CAD:4.10,CHF:6.53,ARS:0.0057,CNY:0.79,AUD:3.64,BTC:520000,ETH:14200,SOL:720,BNB:4100,XRP:9.2,DOGE:1.1};
+  window._tickerRatesOverride = STATIC_FALLBACK;
+
   function buildTicker() {
     const track = document.getElementById('ticker-track');
     if(!track) return;
-    const rates  = window._getRatesInBRL?.()     || window._tickerRatesOverride || {};
-    const yest   = window._getRatesYestInBRL?.() || {};
-    const crypto = window._cryptoRatesInBRL?.()  || {};
-    const all    = {...rates, ...crypto};
 
-    // Só renderiza com dados reais
-    if(Object.keys(all).length <= 2) return;
+    const override = window._tickerRatesOverride || {};
+    const live     = window._getRatesInBRL?.()    || {};
+    const crypto   = window._cryptoRatesInBRL?.() || {};
+    const all      = {...override, ...live, ...crypto};
+
+    if(!Object.keys(all).length) return;
+
+    const yest = window._getRatesYestInBRL?.() || {};
 
     const items = TICKER_ITEMS.map(item => {
-      const price = all[item.code]; if(!price) return null;
-      const prev  = yest[item.code];
-      const pct   = prev ? ((price - prev) / prev) * 100 : null;
-      const up    = pct !== null && pct >= 0;
-      const pStr  = price >= 10000
+      const price = all[item.code];
+      if(!price) return null;
+      const prev = yest[item.code];
+      const pct  = prev ? ((price - prev) / prev) * 100 : null;
+      const up   = pct !== null && pct >= 0;
+      const pStr = price >= 10000
         ? price.toLocaleString('pt-BR',{maximumFractionDigits:0})
         : price >= 1
           ? price.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:4})
           : price.toLocaleString('pt-BR',{minimumFractionDigits:4,maximumFractionDigits:6});
       const vStr = pct !== null ? `${up?'▲':'▼'} ${Math.abs(pct).toFixed(2)}%` : '';
-      return {...item, pStr, vStr, up};
+      return {...item, pStr, vStr, up, hasPct: pct !== null};
     }).filter(Boolean);
 
     if(!items.length) return;
@@ -4348,14 +4368,14 @@ Inclua: 1)📊 Perfil financeiro com os valores reais 2)🔴 Alertas usando os v
         <span class="ticker-code">${item.code}</span>
         <span class="ticker-price">R$ ${item.pStr}</span>
       </span>
-      ${item.vStr?`<span class="ticker-var" style="color:${item.up?'var(--green)':'var(--red)'};background:${item.up?'rgba(0,200,150,.12)':'rgba(255,92,92,.12)'}">${item.vStr}</span>`:''}
+      ${item.hasPct?`<span class="ticker-var" style="color:${item.up?'var(--green)':'var(--red)'};background:${item.up?'rgba(0,200,150,.12)':'rgba(255,92,92,.12)'}">${item.vStr}</span>`:''}
     </span>`;
 
-    const repeated = [...items,...items,...items].map(make).join('');
-    track.innerHTML = repeated;
+    track.innerHTML = [...items,...items,...items].map(make).join('');
 
     requestAnimationFrame(() => {
       const oneSetW = track.scrollWidth / 3;
+      if(!oneSetW) return;
       const sEl = document.getElementById('ticker-keyframe') || document.createElement('style');
       sEl.id = 'ticker-keyframe';
       sEl.textContent = `@keyframes tk{from{transform:translateX(0)}to{transform:translateX(-${oneSetW}px)}}`;
@@ -4365,13 +4385,8 @@ Inclua: 1)📊 Perfil financeiro com os valores reais 2)🔴 Alertas usando os v
     });
   }
 
-  // Chama imediatamente com dados estáticos (fallback realista Mar/2026)
-  const STATIC_FALLBACK = {USD:5.31,EUR:6.03,GBP:7.08,JPY:0.0334,CAD:3.87,CHF:6.72,ARS:0.0038,CNY:0.77,AUD:3.73,BTC:365000,ETH:11000,SOL:465,BNB:3300,XRP:7.4,DOGE:0.8};
-  window._tickerRatesOverride = STATIC_FALLBACK;
-
   window._updateTicker = buildTicker;
 
-  // Pausa ao hover
   document.addEventListener('mouseover', e => {
     if(e.target.closest('#ticker-track')) {
       const t = document.getElementById('ticker-track');
@@ -4385,14 +4400,13 @@ Inclua: 1)📊 Perfil financeiro com os valores reais 2)🔴 Alertas usando os v
     }
   });
 
-  // Busca cotações reais
   async function fetchTickerRates() {
     try {
-      const MOEDAS = ['USD','EUR','GBP','JPY','CAD','CHF','ARS','CNY','AUD','MXN'];
+      const MOEDAS = ['USD','EUR','GBP','JPY','CAD','CHF','ARS','CNY','AUD'];
       const pairs = MOEDAS.map(m=>`${m}-BRL`).join(',');
       const res = await fetch(`https://economia.awesomeapi.com.br/json/last/${pairs}`);
       const data = await res.json();
-      const rates = { BRL: 1 };
+      const rates = {};
       MOEDAS.forEach(code => {
         const key = `${code}BRL`;
         if(data[key]) rates[code] = parseFloat(data[key].bid);
@@ -4401,16 +4415,15 @@ Inclua: 1)📊 Perfil financeiro com os valores reais 2)🔴 Alertas usando os v
     } catch(e) { return null; }
   }
 
-  // Inicia após DOM pronto
-  if(document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => {
-      buildTicker();
-      fetchTickerRates().then(r => { if(r){ window._tickerRatesOverride=r; buildTicker(); } });
-    });
-  } else {
+  window.addEventListener('load', () => {
     buildTicker();
-    fetchTickerRates().then(r => { if(r){ window._tickerRatesOverride=r; buildTicker(); } });
-  }
+    fetchTickerRates().then(r => {
+      if(r && Object.keys(r).length) {
+        window._tickerRatesOverride = {...STATIC_FALLBACK, ...r};
+        buildTicker();
+      }
+    });
+  });
 })();
 
 </body>
