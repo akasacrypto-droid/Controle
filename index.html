@@ -325,12 +325,13 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
   .page{padding:22px max(36px,var(--sl)) calc(var(--sb) + 84px) max(36px,var(--sr))}
 }
 @media(max-width:560px){
-  #online-badge{display:none !important}
+  #online-badge{font-size:9px;padding:3px 6px}
   #month-label{min-width:auto;font-size:10px}
   .topbar{gap:4px}
-  .topbar-right{gap:4px}
+  .topbar-right{gap:4px;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch}
+  .topbar-right::-webkit-scrollbar{display:none}
   .mnav-btn{width:28px;height:28px}
-  .logo-txt{max-width:110px}
+  .logo-txt{max-width:90px}
 }
 
 /* ── OUTROS / MAPS ── */
@@ -927,6 +928,13 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
 
   <div class="slbl" data-i18n="cfg.danger">Zona de perigo</div>
   <div class="card">
+    <div class="notif-row" style="border-bottom:1px solid var(--border)">
+      <div class="notif-info">
+        <div class="ntitle" style="color:var(--blue)">Atualizar site</div>
+        <div class="nsub">Recarrega o app com a versão mais recente do deploy</div>
+      </div>
+      <button onclick="forceUpdateSite()" style="background:var(--blue-bg);border:1px solid rgba(91,158,255,.25);color:var(--blue);border-radius:8px;padding:8px 14px;font-size:12px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;white-space:nowrap">🔄 Atualizar</button>
+    </div>
     <div class="notif-row" style="border-bottom:none">
       <div class="notif-info">
         <div class="ntitle" style="color:var(--red)">Apagar todos os dados</div>
@@ -1793,6 +1801,26 @@ function closeImport(){
   pendingImport=null;
   document.getElementById('import-overlay').classList.remove('open');
   document.getElementById('import-sheet').classList.remove('open');
+}
+
+function forceUpdateSite(){
+  if('serviceWorker' in navigator){
+    navigator.serviceWorker.getRegistrations().then(regs=>{
+      const proms=regs.map(r=>r.unregister());
+      return Promise.all(proms);
+    }).then(()=>{
+      if('caches' in window){
+        return caches.keys().then(names=>Promise.all(names.map(n=>caches.delete(n))));
+      }
+    }).then(()=>{
+      showToast('Cache limpo! Recarregando...');
+      setTimeout(()=>location.reload(true),600);
+    }).catch(()=>{
+      location.reload(true);
+    });
+  } else {
+    location.reload(true);
+  }
 }
 
 function clearAllData(){
@@ -4945,16 +4973,26 @@ function runOverpassQuery(){
   // Ensure [out:json] is present
   if(!query.includes('[out:json]')) query='[out:json][timeout:30];'+query;
 
-  const url='https://overpass-api.de/api/interpreter';
-  fetch(url,{
-    method:'POST',
-    headers:{'Content-Type':'application/x-www-form-urlencoded'},
-    body:'data='+encodeURIComponent(query)
-  })
-  .then(r=>{
-    if(!r.ok) throw new Error('HTTP '+r.status);
-    return r.json();
-  })
+  const _ovEndpoints=[
+    'https://overpass-api.de/api/interpreter',
+    'https://overpass.kumi.systems/api/interpreter',
+    'https://maps.mail.ru/osm/tools/overpass/api/interpreter'
+  ];
+
+  function _fetchOverpass(query, idx){
+    if(idx>=_ovEndpoints.length) return Promise.reject(new Error('Todos os servidores falharam'));
+    return fetch(_ovEndpoints[idx],{
+      method:'POST',
+      headers:{'Content-Type':'application/x-www-form-urlencoded'},
+      body:'data='+encodeURIComponent(query)
+    }).then(r=>{
+      if(!r.ok) throw new Error('HTTP '+r.status);
+      return r.json();
+    }).catch(()=>_fetchOverpass(query, idx+1));
+  }
+
+  const url=_ovEndpoints[0];
+  _fetchOverpass(query, 0)
   .then(data=>{
     const elements=data.elements||[];
     st.innerHTML='✅ \x3cb\x3e'+elements.length+'\x3c/b\x3e resultados encontrados';
@@ -5082,18 +5120,45 @@ function searchMapPlace(){
   const input=document.getElementById('map-search-input');
   const term=input.value.trim();
   if(!term){ showToast('Digite o que deseja buscar'); return; }
-  // Monta query Overpass buscando por nome ou tipo
-  const q='[out:json][timeout:30];\n'
-    +'(\n'
-    +'  nwr["name"~"'+term+'",i](around:5000,{{lat}},{{lng}});\n'
-    +'  nwr["amenity"~"'+term+'",i](around:5000,{{lat}},{{lng}});\n'
-    +'  nwr["shop"~"'+term+'",i](around:5000,{{lat}},{{lng}});\n'
-    +'  nwr["cuisine"~"'+term+'",i](around:5000,{{lat}},{{lng}});\n'
-    +'  nwr["brand"~"'+term+'",i](around:5000,{{lat}},{{lng}});\n'
-    +');\n'
-    +'out center;';
-  document.getElementById('overpass-query').value=q;
-  runOverpassQuery();
+  const st=document.getElementById('overpass-status');
+  st.textContent='⏳ Buscando "'+term+'"...';
+
+  // Usa Nominatim (OpenStreetMap) para busca por texto — gratuito, sem chave
+  const url='https://nominatim.openstreetmap.org/search?format=json&limit=30'
+    +'&q='+encodeURIComponent(term)
+    +'&viewbox='+(_ovUserLng-0.05)+','+(_ovUserLat+0.05)+','+(_ovUserLng+0.05)+','+(_ovUserLat-0.05)
+    +'&bounded=0'
+    +'&addressdetails=1';
+
+  fetch(url,{headers:{'Accept-Language':'pt-BR,pt,en'}})
+  .then(r=>r.json())
+  .then(results=>{
+    if(!results||!results.length){
+      st.textContent='Nenhum resultado para "'+term+'"';
+      return;
+    }
+    st.innerHTML='\x3cb\x3e'+results.length+'\x3c/b\x3e resultados para "'+term+'"';
+    document.getElementById('map-results-count').textContent=results.length+' itens';
+
+    // Converte Nominatim pra formato compatível com renderOverpassResults
+    const elements=results.map(r=>({
+      lat:parseFloat(r.lat),
+      lon:parseFloat(r.lon),
+      tags:{
+        name:r.display_name.split(',')[0],
+        amenity:r.type||'',
+        'addr:street':(r.address&&(r.address.road||r.address.pedestrian||''))||'',
+        'addr:housenumber':(r.address&&r.address.house_number)||'',
+        phone:'',
+        opening_hours:''
+      },
+      type:r.class
+    }));
+    renderOverpassResults(elements);
+  })
+  .catch(err=>{
+    st.textContent='❌ Erro: '+err.message;
+  });
 }
 
 </script>
