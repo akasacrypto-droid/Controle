@@ -1134,20 +1134,20 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
   </div>
 
   <!-- ── MODO MERCADO ── -->
-  <div id="outrospage-mercado" style="display:none">
+  <div id="outrospage-mercado" style="display:none;padding-bottom:24px">
 
     <!-- HERO TOTAL -->
-    <div style="background:linear-gradient(135deg,#0d2818 0%,#132a1e 50%,#0f2318 100%);border:1px solid rgba(0,200,150,.18);border-radius:18px;padding:18px 16px;margin-bottom:12px;position:relative;overflow:hidden">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+    <div style="background:linear-gradient(135deg,#0d2818 0%,#132a1e 50%,#0f2318 100%);border:1px solid rgba(0,200,150,.18);border-radius:16px;padding:16px 14px;margin-bottom:10px;position:relative;overflow:hidden">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
         <span style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;font-weight:700">🛒 Compra atual</span>
         <span style="font-size:11px;color:var(--muted);background:var(--s2);padding:3px 10px;border-radius:99px" id="mkt-count">0 itens</span>
       </div>
-      <div style="font-family:'DM Mono',monospace;font-size:30px;font-weight:700;color:var(--green);letter-spacing:-.5px" id="mkt-total">R$ 0,00</div>
+      <div style="font-family:'DM Mono',monospace;font-size:clamp(22px,6vw,30px);font-weight:700;color:var(--green);letter-spacing:-.5px;word-break:break-all" id="mkt-total">R$ 0,00</div>
       <div style="font-size:11px;color:var(--muted);margin-top:4px" id="mkt-hero-sub">Adicione produtos abaixo</div>
     </div>
 
     <!-- SUB-TABS: Lista / Histórico -->
-    <div style="display:flex;gap:6px;margin-bottom:12px">
+    <div style="display:flex;gap:6px;margin-bottom:10px">
       <button class="plan-sub-tab on" id="mktsub-lista" onclick="goMktTab('lista')" style="flex:1">📋 Lista</button>
       <button class="plan-sub-tab" id="mktsub-historico" onclick="goMktTab('historico')" style="flex:1">📊 Histórico</button>
     </div>
@@ -1156,15 +1156,15 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
     <div id="mktpage-lista">
 
       <!-- FORMULÁRIO -->
-      <div class="card" style="margin-bottom:12px">
-        <div style="padding:14px">
-          <div style="display:flex;flex-direction:column;gap:10px">
-            <input id="mkt-nome" type="text" placeholder="Nome do produto" autocomplete="off" style="width:100%;padding:12px 14px;background:var(--s2);border:1px solid var(--border2);border-radius:12px;color:var(--text);font-size:16px;font-family:'DM Sans',sans-serif;outline:none">
+      <div class="card" style="margin-bottom:10px">
+        <div style="padding:12px">
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <input id="mkt-nome" type="text" placeholder="Nome do produto" autocomplete="off" style="width:100%;padding:11px 12px;background:var(--s2);border:1px solid var(--border2);border-radius:12px;color:var(--text);font-size:16px;font-family:'DM Sans',sans-serif;outline:none">
             <div style="display:flex;gap:8px">
-              <input id="mkt-preco" type="number" inputmode="decimal" step="0.01" min="0" placeholder="Preço (R$)" style="flex:1;width:100%;padding:12px 14px;background:var(--s2);border:1px solid var(--border2);border-radius:12px;color:var(--text);font-size:16px;font-family:'DM Sans',sans-serif;outline:none">
-              <input id="mkt-qtd" type="number" inputmode="numeric" min="1" value="1" placeholder="Qtd" style="width:80px;padding:12px 14px;background:var(--s2);border:1px solid var(--border2);border-radius:12px;color:var(--text);font-size:16px;font-family:'DM Sans',sans-serif;outline:none;text-align:center">
+              <input id="mkt-preco" type="number" inputmode="decimal" step="0.01" min="0" placeholder="Preço (R$)" style="flex:1;min-width:0;padding:11px 12px;background:var(--s2);border:1px solid var(--border2);border-radius:12px;color:var(--text);font-size:16px;font-family:'DM Sans',sans-serif;outline:none">
+              <input id="mkt-qtd" type="number" inputmode="numeric" min="1" value="1" placeholder="Qtd" style="width:72px;flex-shrink:0;padding:11px 8px;background:var(--s2);border:1px solid var(--border2);border-radius:12px;color:var(--text);font-size:16px;font-family:'DM Sans',sans-serif;outline:none;text-align:center">
             </div>
-            <button onclick="mktAddItem()" style="width:100%;padding:14px;border:none;border-radius:13px;background:linear-gradient(135deg,#00C896,#00b386);color:#0a1a13;font-size:14px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;box-shadow:0 4px 15px rgba(0,200,150,.2)">＋ Adicionar produto</button>
+            <button onclick="mktAddItem()" style="width:100%;padding:13px;border:none;border-radius:12px;background:linear-gradient(135deg,#00C896,#00b386);color:#0a1a13;font-size:14px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;box-shadow:0 4px 15px rgba(0,200,150,.2)">＋ Adicionar produto</button>
           </div>
         </div>
       </div>
@@ -1176,14 +1176,14 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
           <span id="mkt-item-count" style="font-size:11px;color:var(--muted)">0 itens</span>
         </div>
         <div id="mkt-list">
-          <div style="text-align:center;padding:36px 16px;color:var(--muted);font-size:13px;line-height:1.7"><div style="font-size:36px;margin-bottom:8px;opacity:.3">🛒</div>Nenhum produto adicionado<br><span style="font-size:11px;opacity:.7">Use o formulário acima para começar</span></div>
+          <div style="text-align:center;padding:30px 16px;color:var(--muted);font-size:13px;line-height:1.7"><div style="font-size:32px;margin-bottom:6px;opacity:.3">🛒</div>Nenhum produto adicionado<br><span style="font-size:11px;opacity:.7">Use o formulário acima para começar</span></div>
         </div>
       </div>
 
       <!-- AÇÕES -->
-      <div id="mkt-actions" style="display:none;gap:8px;margin-top:10px">
-        <button onclick="mktSaveToHistory()" style="flex:1;padding:12px;border:1px solid rgba(0,200,150,.3);border-radius:12px;background:none;color:var(--green);font-size:12px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px">💾 Salvar compra</button>
-        <button onclick="mktClearList()" style="flex:1;padding:12px;border:1px solid rgba(255,90,90,.2);border-radius:12px;background:none;color:var(--red);font-size:12px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px">🗑️ Limpar lista</button>
+      <div id="mkt-actions" style="display:none;flex-direction:column;gap:8px;margin-top:10px">
+        <button onclick="mktSaveToHistory()" style="width:100%;padding:13px;border:1px solid rgba(0,200,150,.3);border-radius:12px;background:rgba(0,200,150,.06);color:var(--green);font-size:13px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px">💾 Salvar compra</button>
+        <button onclick="mktClearList()" style="width:100%;padding:13px;border:1px solid rgba(255,90,90,.2);border-radius:12px;background:rgba(255,90,90,.04);color:var(--red);font-size:13px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px">🗑️ Limpar lista</button>
       </div>
 
     </div>
@@ -1191,7 +1191,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
     <!-- ── ABA HISTÓRICO ── -->
     <div id="mktpage-historico" style="display:none">
       <div id="mkt-hist-list">
-        <div style="text-align:center;padding:36px 16px;color:var(--muted);font-size:13px;line-height:1.7"><div style="font-size:36px;margin-bottom:8px;opacity:.3">📊</div>Nenhuma compra salva ainda<br><span style="font-size:11px;opacity:.7">Finalize uma compra na aba Lista para ver aqui</span></div>
+        <div style="text-align:center;padding:30px 16px;color:var(--muted);font-size:13px;line-height:1.7"><div style="font-size:32px;margin-bottom:6px;opacity:.3">📊</div>Nenhuma compra salva ainda<br><span style="font-size:11px;opacity:.7">Finalize uma compra na aba Lista para ver aqui</span></div>
       </div>
     </div>
 
@@ -5520,7 +5520,7 @@ document.addEventListener('DOMContentLoaded',function(){
     subEl.textContent=n?'Toque em "Salvar compra" ao finalizar':'Adicione produtos abaixo';
 
     if(!n){
-      list.innerHTML='\x3cdiv style="text-align:center;padding:36px 16px;color:var(--muted);font-size:13px;line-height:1.7"\x3e\x3cdiv style="font-size:36px;margin-bottom:8px;opacity:.3"\x3e🛒\x3c/div\x3eNenhum produto adicionado\x3cbr\x3e\x3cspan style="font-size:11px;opacity:.7"\x3eUse o formulário acima\x3c/span\x3e\x3c/div\x3e';
+      list.innerHTML='\x3cdiv style="text-align:center;padding:30px 16px;color:var(--muted);font-size:13px;line-height:1.7"\x3e\x3cdiv style="font-size:32px;margin-bottom:6px;opacity:.3"\x3e🛒\x3c/div\x3eNenhum produto adicionado\x3cbr\x3e\x3cspan style="font-size:11px;opacity:.7"\x3eUse o formulário acima\x3c/span\x3e\x3c/div\x3e';
       return;
     }
 
@@ -5528,14 +5528,14 @@ document.addEventListener('DOMContentLoaded',function(){
     _mktItems.forEach(item=>{
       const sub=(item.preco*item.qtd).toFixed(2).replace('.',',');
       const pUnit=item.preco.toFixed(2).replace('.',',');
-      html+='\x3cdiv style="display:flex;align-items:center;gap:10px;padding:13px 14px;border-bottom:1px solid var(--border)"\x3e'
-        +'\x3cdiv style="width:38px;height:38px;border-radius:10px;background:var(--s2);flex-shrink:0;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:15px"\x3e🏷️\x3c/div\x3e'
+      html+='\x3cdiv style="display:flex;align-items:center;gap:8px;padding:11px 12px;border-bottom:1px solid var(--border)"\x3e'
+        +'\x3cdiv style="width:34px;height:34px;border-radius:9px;background:var(--s2);flex-shrink:0;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:14px"\x3e🏷️\x3c/div\x3e'
         +'\x3cdiv style="flex:1;min-width:0"\x3e'
-        +'\x3cdiv style="font-size:13.5px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis"\x3e'+_esc(item.nome)+'\x3c/div\x3e'
-        +'\x3cdiv style="font-size:11px;color:var(--muted);margin-top:3px"\x3eR$ '+pUnit+' × '+item.qtd+'\x3c/div\x3e'
+        +'\x3cdiv style="font-size:13px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis"\x3e'+_esc(item.nome)+'\x3c/div\x3e'
+        +'\x3cdiv style="font-size:11px;color:var(--muted);margin-top:2px"\x3eR$ '+pUnit+' \u00d7 '+item.qtd+'\x3c/div\x3e'
         +'\x3c/div\x3e'
-        +'\x3cspan style="font-size:14px;font-weight:800;color:var(--green);white-space:nowrap;font-family:\'DM Mono\',monospace"\x3eR$ '+sub+'\x3c/span\x3e'
-        +'\x3cbutton onclick="mktRemoveItem('+item.id+')" style="width:30px;height:30px;border-radius:50%;border:1px solid rgba(255,90,90,.2);background:rgba(255,90,90,.06);color:var(--red);font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0"\x3e✕\x3c/button\x3e'
+        +'\x3cspan style="font-size:13px;font-weight:800;color:var(--green);white-space:nowrap;font-family:\'DM Mono\',monospace;flex-shrink:0"\x3eR$ '+sub+'\x3c/span\x3e'
+        +'\x3cbutton onclick="mktRemoveItem('+item.id+')" style="width:28px;height:28px;border-radius:50%;border:1px solid rgba(255,90,90,.2);background:rgba(255,90,90,.06);color:var(--red);font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0"\x3e\u2715\x3c/button\x3e'
         +'\x3c/div\x3e';
     });
     list.innerHTML=html;
