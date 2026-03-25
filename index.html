@@ -1167,12 +1167,11 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
     </div>
 
     <!-- ── ABA LISTA ── -->
-    <div id="mktpage-lista">
+    <div id="mktpage-lista" style="display:flex;flex-direction:column;gap:0">
 
-      <!-- FORMULÁRIO ADICIONAR / EDITAR -->
-      <div class="card" style="margin-bottom:12px" id="mkt-form-card">
-        <div style="padding:14px 14px 12px">
-          <div style="font-size:11px;font-weight:700;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px" id="mkt-form-title">＋ Novo produto</div>
+      <!-- FORMULÁRIO TOPO -->
+      <div class="card" style="margin-bottom:10px" id="mkt-form-card">
+        <div style="padding:13px 13px 11px">
           <div style="display:flex;flex-direction:column;gap:8px">
             <input id="mkt-nome" type="text" placeholder="Nome do produto" autocomplete="off"
               style="width:100%;padding:12px 13px;background:var(--s2);border:1.5px solid var(--border2);border-radius:12px;color:var(--text);font-size:15px;font-family:'DM Sans',sans-serif;outline:none;transition:border .15s"
@@ -1185,16 +1184,13 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
                 style="width:100%;padding:12px 8px;background:var(--s2);border:1.5px solid var(--border2);border-radius:12px;color:var(--text);font-size:15px;font-family:'DM Sans',sans-serif;outline:none;text-align:center;transition:border .15s"
                 onfocus="this.style.borderColor='var(--green)'" onblur="this.style.borderColor='var(--border2)'">
             </div>
-            <div style="display:grid;grid-template-columns:1fr auto;gap:8px" id="mkt-form-btns">
-              <button onclick="mktAddItem()" id="mkt-btn-add" style="padding:13px;border:none;border-radius:12px;background:linear-gradient(135deg,#00C896,#00a87e);color:#0a1a13;font-size:14px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;box-shadow:0 3px 12px rgba(0,200,150,.25);transition:opacity .15s;width:100%" onmousedown="this.style.opacity='.8'" onmouseup="this.style.opacity='1'">＋ Adicionar</button>
-              <button onclick="mktCancelEdit()" id="mkt-btn-cancel" style="display:none;padding:13px 16px;border:1px solid var(--border2);border-radius:12px;background:var(--s2);color:var(--muted2);font-size:14px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;white-space:nowrap">✕</button>
-            </div>
+            <button onclick="mktAddItem()" id="mkt-btn-add" style="padding:13px;border:none;border-radius:12px;background:linear-gradient(135deg,#00C896,#00a87e);color:#0a1a13;font-size:14px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;width:100%">＋ Adicionar</button>
           </div>
         </div>
       </div>
 
       <!-- LISTA DE PRODUTOS -->
-      <div class="card" id="mkt-list-card" style="margin-bottom:4px">
+      <div class="card" id="mkt-list-card" style="margin-bottom:10px">
         <div style="display:flex;align-items:center;justify-content:space-between;padding:11px 14px;border-bottom:1px solid var(--border)">
           <span style="font-size:12.5px;font-weight:700;color:var(--muted2)">🛒 Produtos</span>
           <span id="mkt-item-count" style="font-size:11px;color:var(--muted)">0 itens</span>
@@ -1206,6 +1202,18 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
             <span style="font-size:11px;opacity:.7">Use o formulário acima para começar</span>
           </div>
         </div>
+      </div>
+
+      <!-- BOTÕES DE AÇÃO — sempre abaixo da lista, dentro do scroll normal -->
+      <div id="mkt-actions" style="display:none;flex-direction:column;gap:8px;margin-bottom:16px">
+        <button onclick="mktSaveToHistory()"
+          style="width:100%;padding:15px;border:1.5px solid rgba(0,200,150,.4);border-radius:14px;background:rgba(0,200,150,.1);color:var(--green);font-size:15px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">
+          💾 Salvar compra no histórico
+        </button>
+        <button onclick="mktClearList()"
+          style="width:100%;padding:13px;border:1.5px solid rgba(255,90,90,.25);border-radius:14px;background:rgba(255,90,90,.06);color:var(--red);font-size:13px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">
+          🗑️ Limpar lista
+        </button>
       </div>
 
     </div>
@@ -1232,18 +1240,6 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
   </div><!-- fim outrospage-mercado -->
 
 </div><!-- fim page-outros -->
-
-<!-- ── BARRA FIXA MERCADO: Salvar / Limpar ── -->
-<div id="mkt-actions" style="display:none;position:fixed;bottom:calc(var(--sb) + 56px);left:0;right:0;z-index:40;padding:10px 14px;background:linear-gradient(to top,var(--bg) 75%,transparent);pointer-events:none">
-  <div style="display:flex;gap:8px;pointer-events:all;max-width:600px;margin:0 auto">
-    <button onclick="mktSaveToHistory()" style="flex:1;padding:14px;border:1px solid rgba(0,200,150,.35);border-radius:13px;background:rgba(14,26,20,.95);color:var(--green);font-size:14px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;box-shadow:0 4px 20px rgba(0,0,0,.5)">
-      💾 Salvar compra
-    </button>
-    <button onclick="mktClearList()" style="width:50px;padding:14px;border:1px solid rgba(255,90,90,.25);border-radius:13px;background:rgba(20,10,10,.95);color:var(--red);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 20px rgba(0,0,0,.5);flex-shrink:0" title="Limpar lista">
-      🗑️
-    </button>
-  </div>
-</div>
 
 <!-- ── SHEET: EDITAR ITEM MERCADO ── -->
 <div id="mkt-edit-overlay" class="sheet-overlay" onclick="mktCancelEdit()"></div>
@@ -1571,8 +1567,7 @@ function goTab(tab){
   document.getElementById('fab').style.display=(tab==='txs'||tab==='report')?'flex':'none';
   if(tab==='plan')renderPlan();
   if(tab==='report')renderReport();
-  // Esconde barra flutuante do mercado ao sair da aba Outros
-  if(tab!=='outros'){ const a=document.getElementById('mkt-actions'); if(a) a.style.display='none'; }
+  // (mercado actions são inline, não precisam esconder ao trocar aba)
 
   if(tab==='notif'){
     // Limpa badge ao abrir
@@ -5500,12 +5495,6 @@ document.addEventListener('DOMContentLoaded',function(){
     }, 320);
   };
 
-  /* ── Esconder barra de ações ── */
-  function mktHideActions(){
-    const a=document.getElementById('mkt-actions');
-    if(a) a.style.display='none';
-  }
-
   /* ── Sub-tabs Outros ── */
   window.goOutrosTab=function(sub){
     ['tradutor','mercado'].forEach(s=>{
@@ -5515,7 +5504,6 @@ document.addEventListener('DOMContentLoaded',function(){
       if(btn) btn.classList.toggle('on',s===sub);
     });
     if(sub==='mercado'){ mktRender(); mktRenderHist(); }
-    else { mktHideActions(); }
   };
 
   /* ── Sub-tabs Mercado (Lista/Histórico) ── */
@@ -5526,7 +5514,7 @@ document.addEventListener('DOMContentLoaded',function(){
       if(pg) pg.style.display=s===sub?'block':'none';
       if(btn) btn.classList.toggle('on',s===sub);
     });
-    if(sub==='historico'){ mktRenderHist(); mktHideActions(); }
+    if(sub==='historico') mktRenderHist();
     if(sub==='lista') mktRender();
   };
 
@@ -5645,7 +5633,7 @@ document.addEventListener('DOMContentLoaded',function(){
     const cntTxt=n+' ite'+(n===1?'m':'ns');
     countEl.textContent=cntTxt;
     countHero.textContent=cntTxt;
-    actionsEl.style.display=n?'block':'none';
+    actionsEl.style.display=n?'flex':'none';
     subEl.textContent=n?'Toque em "Salvar compra" ao finalizar':'Adicione produtos abaixo';
 
     // Barra de progresso de itens marcados
