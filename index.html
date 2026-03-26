@@ -5973,6 +5973,7 @@ document.addEventListener('DOMContentLoaded',function(){
         const pStr='R$ '+i.preco.toFixed(2).replace('.',',');
         const totalItem='R$ '+(i.preco*i.qtd).toFixed(2).replace('.',',');
         let varTag='';
+        let varDetalhada='';
         const prevPrice=prevMap[i.nome.toLowerCase()];
         if(prev && typeof prevPrice==='number'){
           const diff=((i.preco-prevPrice)/prevPrice*100);
@@ -5986,14 +5987,21 @@ document.addEventListener('DOMContentLoaded',function(){
             const ico=diff>0?'↑':'↓';
             const valorStr='R$ '+(Math.abs(diffValor)).toFixed(2).replace('.',',');
             const totalStr='R$ '+(Math.abs(diffTotal)).toFixed(2).replace('.',',');
-            const tooltipTxt=statusTxt+' em '+Math.abs(diff).toFixed(1)+'%\\n\\nPor unidade: '+valorStr+'\\nTotal (×'+i.qtd+'): '+totalStr+'\\n\\n'+varDescr+' de preço';
-            varTag='<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;white-space:nowrap;background:'+bg+';color:'+col+';cursor:help;text-decoration:underline dotted;position:relative" title="'+tooltipTxt+'">'+ico+(diff>0?'+':'')+diff.toFixed(1)+'%</span>';
+            const pctStr=Math.abs(diff).toFixed(1);
+            const tooltipTxt=statusTxt+' em '+pctStr+'% por unidade\n\nPor unidade: '+valorStr+'\nTotal (×'+i.qtd+'): '+totalStr+'\n\n'+varDescr+' de preço';
+            varTag='<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;white-space:nowrap;background:'+bg+';color:'+col+';cursor:help;text-decoration:underline dotted;position:relative" title="'+tooltipTxt+'">'+ico+(diff>0?'+':'')+pctStr+'%</span>';
+            
+            // Card detalhado embaixo de cada produto
+            varDetalhada='<div style="background:'+bg+';border-radius:8px;padding:6px 8px;margin-top:4px;font-size:9.5px;color:'+col+';font-weight:600">'
+              +'Unitário: '+valorStr+' ('+ico+(diff>0?'+':'')+pctStr+'%) | Total: '+totalStr
+              +'</div>';
           } else {
             varTag='<span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:99px;background:var(--s2);color:var(--muted);white-space:nowrap">=</span>';
           }
         }
 
-        prodHtml+='<div style="display:flex;align-items:center;gap:6px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.04)">'
+        prodHtml+='<div style="display:flex;align-items:flex-start;gap:6px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.04);flex-direction:column">'
+          +'<div style="display:flex;align-items:center;gap:6px;width:100%">'
           +'<div style="flex:1;min-width:0">'
           +'<div style="font-size:12.5px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+_esc(i.nome)+'</div>'
           +'<div style="font-size:10.5px;color:var(--muted);margin-top:1px">'+pStr+' &times; '+i.qtd+'</div>'
@@ -6002,6 +6010,8 @@ document.addEventListener('DOMContentLoaded',function(){
           +'<span style="font-size:12px;font-weight:700;color:var(--muted2);font-family:\'DM Mono\',monospace">'+totalItem+'</span>'
           +varTag
           +'</div>'
+          +'</div>'
+          +varDetalhada
           +'</div>';
       });
 
@@ -6030,10 +6040,18 @@ document.addEventListener('DOMContentLoaded',function(){
         });
         
         if(itemsComVariacao.length>0){
+          // Calcular totais por variação (baseado em valor unitário)
+          let totalMaisCaro=0, totalMaisBarato=0;
           let somaAumento=0, somaReducao=0;
+          
           itemsComVariacao.forEach(item=>{
-            if(item.diff>0) somaAumento+=Math.abs(item.diffTotal);
-            else somaReducao+=Math.abs(item.diffTotal);
+            if(item.diff>0){ 
+              somaAumento+=Math.abs(item.diffTotal);
+              totalMaisCaro+=item.diffTotal;
+            } else { 
+              somaReducao+=Math.abs(item.diffTotal);
+              totalMaisBarato+=item.diffTotal;
+            }
           });
           
           if(somaAumento>0 || somaReducao>0){
@@ -6041,10 +6059,12 @@ document.addEventListener('DOMContentLoaded',function(){
             variacaoHtml+='<div style="font-weight:700;color:var(--blue);margin-bottom:6px;display:flex;align-items:center;gap:5px">ℹ️ Variação vs compra anterior</div>';
             
             if(somaAumento>0){
-              variacaoHtml+='<div style="color:var(--red);margin-bottom:4px"><strong>↑ Aumentou:</strong> R$ '+somaAumento.toFixed(2).replace('.',',')+'</div>';
+              const pctAum=itemsComVariacao.filter(x=>x.diff>0).reduce((sum,x)=>sum+x.diff,0)/itemsComVariacao.filter(x=>x.diff>0).length||0;
+              variacaoHtml+='<div style="color:var(--red);margin-bottom:4px"><strong>↑ Ficou mais caro:</strong> R$ '+somaAumento.toFixed(2).replace('.',',')+'</div>';
             }
             if(somaReducao>0){
-              variacaoHtml+='<div style="color:var(--green)"><strong>↓ Reduziu:</strong> R$ '+somaReducao.toFixed(2).replace('.',',')+'</div>';
+              const pctRed=itemsComVariacao.filter(x=>x.diff<0).reduce((sum,x)=>sum+x.diff,0)/itemsComVariacao.filter(x=>x.diff<0).length||0;
+              variacaoHtml+='<div style="color:var(--green)"><strong>↓ Ficou mais barato:</strong> R$ '+somaReducao.toFixed(2).replace('.',',')+'</div>';
             }
             variacaoHtml+='</div>';
           }
