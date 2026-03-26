@@ -1206,9 +1206,6 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
 
       <!-- MENU AVANÇADO -->
       <div style="display:flex;gap:4px;margin-bottom:12px;flex-shrink:0;flex-wrap:wrap">
-        <button onclick="mktDuplicateList()" title="Duplicar lista ativa" style="flex:1;min-width:120px;padding:8px 12px;border:1px solid var(--border2);border-radius:10px;background:var(--s2);color:var(--muted2);font-size:12px;font-family:'DM Sans',sans-serif;cursor:pointer">📋 Duplicar</button>
-        <button onclick="mktExportList()" title="Baixar lista em JSON" style="flex:1;min-width:100px;padding:8px 12px;border:1px solid var(--border2);border-radius:10px;background:var(--s2);color:var(--muted2);font-size:12px;font-family:'DM Sans',sans-serif;cursor:pointer">📤 Exportar</button>
-        <button onclick="mktImportList()" title="Carregar lista de arquivo" style="flex:1;min-width:100px;padding:8px 12px;border:1px solid var(--border2);border-radius:10px;background:var(--s2);color:var(--muted2);font-size:12px;font-family:'DM Sans',sans-serif;cursor:pointer">📥 Importar</button>
       </div>
       <div class="card" id="mkt-list-card" style="margin-bottom:10px;flex:1;overflow-y:auto;display:flex;flex-direction:column">
         <div style="display:flex;align-items:center;justify-content:space-between;padding:11px 14px;border-bottom:1px solid var(--border)">
@@ -5567,8 +5564,9 @@ document.addEventListener('DOMContentLoaded',function(){
     _mktLists.push(id);
     localStorage.setItem(LISTS_KEY,JSON.stringify(_mktLists));
     localStorage.setItem(MKT_KEY+'_'+id,JSON.stringify([]));
-    _mktSelectList(id);
+    mktSelectList(id);
     mktRenderListSelector();
+    mktRender();
   };
 
   /* ── Renderizar seletor de listas ── */
@@ -5939,11 +5937,15 @@ document.addEventListener('DOMContentLoaded',function(){
         const prevPrice=prevMap[i.nome.toLowerCase()];
         if(prev && typeof prevPrice==='number'){
           const diff=((i.preco-prevPrice)/prevPrice*100);
+          const diffValor=i.preco-prevPrice;
+          const diffTotal=(i.preco*i.qtd)-(prevPrice*i.qtd);
           if(Math.abs(diff)>=0.5){
             const bg=diff>0?'rgba(255,90,90,.12)':'rgba(0,200,150,.12)';
             const col=diff>0?'var(--red)':'var(--green)';
             const ico=diff>0?'↑':'↓';
-            varTag='<span style="font-size:10px;font-weight:700;padding:1px 7px;border-radius:99px;white-space:nowrap;background:'+bg+';color:'+col+'">'+ico+(diff>0?'+':'')+diff.toFixed(1)+'%</span>';
+            const valorStr='R$ '+(Math.abs(diffValor)).toFixed(2).replace('.',',');
+            const totalStr='R$ '+(Math.abs(diffTotal)).toFixed(2).replace('.',',');
+            varTag='<span style="font-size:10px;font-weight:700;padding:1px 7px;border-radius:99px;white-space:nowrap;background:'+bg+';color:'+col+';cursor:help;text-decoration:underline dotted" title="Unitário: '+valorStr+' | Total: '+totalStr+'">'+ico+(diff>0?'+':'')+diff.toFixed(1)+'%</span>';
           } else {
             varTag='<span style="font-size:10px;padding:1px 6px;border-radius:99px;background:var(--s2);color:var(--muted);white-space:nowrap">=</span>';
           }
