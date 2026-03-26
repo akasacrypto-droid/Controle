@@ -5939,15 +5939,18 @@ document.addEventListener('DOMContentLoaded',function(){
           const diff=((i.preco-prevPrice)/prevPrice*100);
           const diffValor=i.preco-prevPrice;
           const diffTotal=(i.preco*i.qtd)-(prevPrice*i.qtd);
+          const statusTxt=diff>0?'Você pagou mais caro':'Você pagou mais barato';
+          const varDescr=diff>0?'Aumento':'Redução';
           if(Math.abs(diff)>=0.5){
             const bg=diff>0?'rgba(255,90,90,.12)':'rgba(0,200,150,.12)';
             const col=diff>0?'var(--red)':'var(--green)';
             const ico=diff>0?'↑':'↓';
             const valorStr='R$ '+(Math.abs(diffValor)).toFixed(2).replace('.',',');
             const totalStr='R$ '+(Math.abs(diffTotal)).toFixed(2).replace('.',',');
-            varTag='<span style="font-size:10px;font-weight:700;padding:1px 7px;border-radius:99px;white-space:nowrap;background:'+bg+';color:'+col+';cursor:help;text-decoration:underline dotted" title="Unitário: '+valorStr+' | Total: '+totalStr+'">'+ico+(diff>0?'+':'')+diff.toFixed(1)+'%</span>';
+            const tooltipTxt=statusTxt+' em '+Math.abs(diff).toFixed(1)+'%\\n\\nPor unidade: '+valorStr+'\\nTotal (×'+i.qtd+'): '+totalStr+'\\n\\n'+varDescr+' de preço';
+            varTag='<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;white-space:nowrap;background:'+bg+';color:'+col+';cursor:help;text-decoration:underline dotted;position:relative" title="'+tooltipTxt+'">'+ico+(diff>0?'+':'')+diff.toFixed(1)+'%</span>';
           } else {
-            varTag='<span style="font-size:10px;padding:1px 6px;border-radius:99px;background:var(--s2);color:var(--muted);white-space:nowrap">=</span>';
+            varTag='<span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:99px;background:var(--s2);color:var(--muted);white-space:nowrap">=</span>';
           }
         }
 
@@ -5962,6 +5965,52 @@ document.addEventListener('DOMContentLoaded',function(){
           +'</div>'
           +'</div>';
       });
+
+      // Resumo de variação vs compra anterior
+      let variacaoHtml='';
+      if(prev){
+        let itemsComVariacao=[];
+        entry.itens.forEach(i=>{
+          const prevPrice=prevMap[i.nome.toLowerCase()];
+          if(typeof prevPrice==='number'){
+            const diff=((i.preco-prevPrice)/prevPrice*100);
+            const diffValor=i.preco-prevPrice;
+            const diffTotal=(i.preco*i.qtd)-(prevPrice*i.qtd);
+            if(Math.abs(diff)>=0.5){
+              itemsComVariacao.push({
+                nome:i.nome,
+                diff:diff,
+                diffValor:diffValor,
+                diffTotal:diffTotal,
+                qtd:i.qtd,
+                prevPrice:prevPrice,
+                newPrice:i.preco
+              });
+            }
+          }
+        });
+        
+        if(itemsComVariacao.length>0){
+          let somaAumento=0, somaReducao=0;
+          itemsComVariacao.forEach(item=>{
+            if(item.diff>0) somaAumento+=Math.abs(item.diffTotal);
+            else somaReducao+=Math.abs(item.diffTotal);
+          });
+          
+          if(somaAumento>0 || somaReducao>0){
+            variacaoHtml='<div style="background:rgba(91,158,255,.08);border:1px solid rgba(91,158,255,.15);border-radius:12px;padding:11px 12px;margin:10px 0 0 0;font-size:11.5px;line-height:1.6">';
+            variacaoHtml+='<div style="font-weight:700;color:var(--blue);margin-bottom:6px;display:flex;align-items:center;gap:5px">ℹ️ Variação vs compra anterior</div>';
+            
+            if(somaAumento>0){
+              variacaoHtml+='<div style="color:var(--red);margin-bottom:4px"><strong>↑ Aumentou:</strong> R$ '+somaAumento.toFixed(2).replace('.',',')+'</div>';
+            }
+            if(somaReducao>0){
+              variacaoHtml+='<div style="color:var(--green)"><strong>↓ Reduziu:</strong> R$ '+somaReducao.toFixed(2).replace('.',',')+'</div>';
+            }
+            variacaoHtml+='</div>';
+          }
+        }
+      }
 
       html+='<div style="background:var(--s1);border:1px solid var(--border);border-radius:16px;margin-bottom:10px;overflow:hidden">'
         // Cabeçalho da compra
@@ -5986,6 +6035,7 @@ document.addEventListener('DOMContentLoaded',function(){
         // Produtos
         +'<div style="padding:4px 14px 8px">'
         +prodHtml
+        +variacaoHtml
         +'</div>'
         // Botão lançar no extrato
         +'<div style="padding:0 14px 12px">'
