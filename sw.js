@@ -1,5 +1,7 @@
-const CACHE = 'controle-v1';
-const ASSETS = ['./', './index.html', './icon.svg'];
+const CACHE = 'controle-v2';
+const ASSETS = ['./', './index.html', './manifest.json', './icon.svg'];
+const ALERT_STATE_URL = './__alert_state__';
+const CRYPTO_IDS = {BTC:'bitcoin',ETH:'ethereum',BNB:'binancecoin',SOL:'solana',XRP:'ripple',ADA:'cardano',DOGE:'dogecoin',DOT:'polkadot'};
 
 // Instala e cacheia assets principais
 self.addEventListener('install', e => {
@@ -43,9 +45,10 @@ let _alerts = [];
 self.addEventListener('message', e => {
   if(e.data?.type === 'UPDATE_ALERTS') {
     _alerts = e.data.alerts || [];
+    e.waitUntil?.(saveAlertState());
   }
-  if(e.data?.type === 'PING') {
-    checkAlerts();
+  if(e.data?.type === 'PING' || e.data?.type === 'START_ALERT_CHECK') {
+    e.waitUntil?.(checkAlerts());
   }
 });
 
@@ -54,33 +57,60 @@ self.addEventListener('periodicsync', e => {
 });
 
 async function checkAlerts() {
+  await restoreAlertState();
   if(!_alerts.length) return;
-  const active = _alerts.filter(a => a.active !== false);
+  const active = _alerts.filter(a => a.active !== false && !a.triggered);
   if(!active.length) return;
 
   try {
-    const moedas = [...new Set(active.map(a => a.moeda).filter(m => !['BTC','ETH','BNB','SOL','XRP','ADA','DOGE','DOT'].includes(m)))];
-    if(!moedas.length) return;
+    const fiatMoedas = [...new Set(active.map(a => a.moeda).filter(m => !CRYPTO_IDS[m]))];
+    const cryptoMoedas = [...new Set(active.map(a => a.moeda).filter(m => CRYPTO_IDS[m]))];
+    const rateMap = {};
 
-    const pairs = moedas.map(m => `${m}-BRL`).join(',');
-    const res = await fetch(`https://economia.awesomeapi.com.br/json/last/${pairs}`);
-    const data = await res.json();
+    if(fiatMoedas.length){
+      try {
+        const pairs = fiatMoedas.map(m => `${m}-BRL`).join(',');
+        const res = await fetch(`https://economia.awesomeapi.com.br/json/last/${pairs}`);
+        const data = await res.json();
+        fiatMoedas.forEach(code=>{
+          const key = `${code}BRL`;
+          if(data[key]) rateMap[code] = parseFloat(data[key].bid);
+        });
+      } catch(e) {}
+    }
+
+    if(cryptoMoedas.length){
+      const ids = cryptoMoedas.map(code => CRYPTO_IDS[code]).filter(Boolean).join(',');
+      if(ids){
+        try {
+          const res = await fetch(`https://api.coingecko.com/api/v3/coins/markets?vs_currency=brl&ids=${ids}&order=market_cap_desc&sparkline=false`);
+          const data = await res.json();
+          if(Array.isArray(data)){
+            data.forEach(item=>{
+              const code = Object.keys(CRYPTO_IDS).find(k => CRYPTO_IDS[k] === item.id);
+              if(code && Number.isFinite(Number(item.current_price))) rateMap[code] = Number(item.current_price);
+            });
+          }
+        } catch(e) {}
+      }
+    }
 
     const triggered = [];
     const updated = _alerts.map(a => {
-      const key = `${a.moeda}BRL`;
-      const rate = data[key] ? parseFloat(data[key].bid) : null;
+      if(a.triggered || a.active === false) return a;
+      const rate = rateMap[a.moeda];
       if(!rate) return a;
       const hit = a.cond === 'acima' ? rate >= a.valor : rate <= a.valor;
       if(hit && a.active !== false) {
         triggered.push({ ...a, rateNow: rate });
-        return { ...a, active: false };
+        return { ...a, active: false, triggered: true };
       }
       return a;
     });
 
     if(triggered.length) {
       _alerts = updated;
+      await saveAlertState();
       // Notifica clientes abertos
       const clients = await self.clients.matchAll();
       clients.forEach(c => c.postMessage({ type: 'ALERTS_TRIGGERED', triggered, allAlerts: updated }));
@@ -95,6 +125,27 @@ async function checkAlerts() {
           renotify: true,
         });
       });
+    }
+  } catch(e) {}
+}
+
+async function saveAlertState(){
+  try {
+    const cache = await caches.open(CACHE);
+    await cache.put(ALERT_STATE_URL, new Response(JSON.stringify(_alerts), {
+      headers: { 'Content-Type': 'application/json' }
+    }));
+  } catch(e) {}
+}
+
+async function restoreAlertState(){
+  if(_alerts.length) return;
+  try {
+    const cache = await caches.open(CACHE);
+    const res = await cache.match(ALERT_STATE_URL);
+    if(res){
+      const data = await res.json();
+      if(Array.isArray(data)) _alerts = data;
     }
   } catch(e) {}
 }
