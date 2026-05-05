@@ -933,6 +933,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
       <span data-i18n="crypto.loading">Carregando criptos...</span>
     </div>
     <div id="crypto-grid" style="display:none;margin-bottom:8px"></div>
+    <div id="cambio-status" style="display:none;margin:6px 0 4px;padding:9px 11px;border-radius:10px;border:1px solid rgba(255,184,77,.25);background:rgba(255,184,77,.1);color:var(--amber);font-size:11px;line-height:1.45;text-align:center"></div>
 
     <div id="cambio-fonte" data-i18n="cambio.source.fiat" style="text-align:center;font-size:10px;color:var(--muted);padding:2px 0 4px;opacity:.6">AwesomeAPI · cotação real · atualiza a cada 60s</div>
 
@@ -1112,6 +1113,12 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
       </div>
       <button onclick="testNotif()" style="background:var(--blue-bg);border:1px solid rgba(91,158,255,.25);color:var(--blue);border-radius:8px;padding:7px 14px;font-size:12px;font-family:'DM Sans',sans-serif;cursor:pointer">Testar</button>
     </div>
+  </div>
+
+  <div class="slbl">PWA / GitHub Pages</div>
+  <div class="card" style="margin-bottom:12px">
+    <div id="pwa-status-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:12px"></div>
+    <div id="pwa-status-help" style="border-top:1px solid var(--border);padding:10px 12px;color:var(--muted);font-size:11px;line-height:1.5">Verificando ambiente...</div>
   </div>
 
   <div class="slbl" data-i18n="cfg.nubank">Importar extrato Nubank</div>
@@ -2099,6 +2106,7 @@ function goTab(tab){
     if(monthLabelEl)monthLabelEl.textContent=`${getMonthsShort()[curM]} ${curY}`;
     renderNotifHistory();
   }
+  if(tab==='cfg' && window.updatePwaStatus) window.updatePwaStatus();
   if(window.normalizeMobileViewport){
     try{window.normalizeMobileViewport();}catch(e){}
   }
@@ -2261,6 +2269,32 @@ const DUE_LEAD_DAYS_KEY='fin_due_lead_days';
 const DAILY_NOTIF_LAST_KEY='fin_notif_last_daily';
 let dueNotifInterval=null;
 
+async function showSystemNotification(title, options){
+  if(!('Notification' in window) || Notification.permission!=='granted') return false;
+  const opts={
+    icon:'./icon.svg',
+    badge:'./icon.svg',
+    requireInteraction:true,
+    renotify:true,
+    silent:false,
+    vibrate:[220,90,220],
+    ...options
+  };
+  try{
+    if('serviceWorker' in navigator && window.isSecureContext && location.protocol!=='file:'){
+      const reg=await navigator.serviceWorker.ready;
+      await reg.showNotification(title, opts);
+      return true;
+    }
+    new Notification(title, opts);
+    return true;
+  }catch(e){
+    try{ new Notification(title, opts); return true; }catch(e2){}
+  }
+  return false;
+}
+window.showSystemNotification=showSystemNotification;
+
 function getDueLeadDays(){
   const n=parseInt(localStorage.getItem(DUE_LEAD_DAYS_KEY)||'3',10);
   if(!Number.isFinite(n))return 3;
@@ -2304,7 +2338,13 @@ function checkDueNotifications(){
 
     let delivered=false;
     if(canNative){
-      try{
+      showSystemNotification('Vencimento próximo',{
+        body,
+        tag:`due-${tx.id}-${tx.dueDate}`,
+        data:{type:'due',txId:tx.id}
+      });
+      delivered=true;
+      if(false)try{
         new Notification('⏰ Vencimento próximo',{body,icon:'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="20" fill="%23FFB020"/><text y=".9em" font-size="80">⏰</text></svg>'});
         delivered=true;
       }catch(e){}
@@ -2460,6 +2500,13 @@ function sendNotif(){
       const now=new Date();
       return d.toDateString()===now.toDateString();
     }).length;
+    showSystemNotification('Controle+',{
+      body:txToday===0?t('notif.push.no.expense'):t('notif.push.has.expense').replace('{n}',String(txToday)),
+      tag:'daily-reminder',
+      data:{type:'daily-reminder'}
+    });
+    document.getElementById('notif-status').textContent=(window.t?window.t('toast.notif.on'):'Notificações ativas');
+    return;
     try{
       new Notification('💰 Controle+',{
         body:txToday===0?t('notif.push.no.expense'):t('notif.push.has.expense').replace('{n}',String(txToday)),
@@ -4555,6 +4602,7 @@ tr+tr td{border-top:1px solid #f3f3f3}
     if(!valor || valor<=0){ showToast(t('toast.fill.value')); return; }
     alerts.push({ id: Date.now(), moeda, cond: alertCond, valor, active: true, triggered: false });
     saveAlerts();
+    syncAlertsToSW();
     renderAlerts();
     closeAlertSheet();
     showToast(t('toast.alert.created'));
@@ -4563,12 +4611,13 @@ tr+tr td{border-top:1px solid #f3f3f3}
   window.deleteAlert = function(id){
     alerts = alerts.filter(a=>a.id!==id);
     saveAlerts();
+    syncAlertsToSW();
     renderAlerts();
   };
 
   window.toggleAlert = function(id){
     const a = alerts.find(x=>x.id===id);
-    if(a){ a.active=!a.active; a.triggered=false; saveAlerts(); renderAlerts(); }
+    if(a){ a.active=!a.active; a.triggered=false; saveAlerts(); syncAlertsToSW(); renderAlerts(); }
   };
 
   function renderAlerts(){
@@ -4630,6 +4679,13 @@ tr+tr td{border-top:1px solid #f3f3f3}
         showToast(`🔔 ${title}`);
         // Notificação do sistema
         if('Notification' in window && Notification.permission==='granted'){
+          showSystemNotification(`Controle+ - ${title}`,{
+            body,
+            tag:`alert-${a.id}`,
+            vibrate:[300,120,300,120,500],
+            data:{type:'price-alert',alertId:a.id,moeda:a.moeda}
+          });
+          return;
           if('serviceWorker' in navigator){
             navigator.serviceWorker.ready.then(reg=>{
               reg.showNotification(`💰 Controle+ — ${title}`,{
@@ -4881,13 +4937,17 @@ tr+tr td{border-top:1px solid #f3f3f3}
 
   let ratesInBRL  = { BRL: 1 };
   let ratesYestInBRL = {};
+  let ratesChangePct = {};
   let lastFetch   = 0;
   let autoInterval = null;
+  let lastRateSource = '';
+  const RATES_CACHE_KEY = '_fin_last_rates_cache';
 
   // Expõe via getter — sempre retorna a referência atual mesmo após reassign
   Object.defineProperty(window, '_ratesInBRL', { get: ()=>ratesInBRL, configurable:true });
   window._getRatesInBRL     = () => ratesInBRL;
   window._getRatesYestInBRL = () => ratesYestInBRL;
+  window._getRatesChangePct = () => ratesChangePct;
 
   window._injectCryptoRates = function(cryptoRates){
     Object.entries(cryptoRates).forEach(([k,v]) => { ratesInBRL[k] = v; });
@@ -4917,51 +4977,142 @@ tr+tr td{border-top:1px solid #f3f3f3}
     return d.toISOString().slice(0,10);
   }
 
+  async function fetchRatesFromProxy(){
+    if(!['localhost','127.0.0.1'].includes(location.hostname)) return null;
+    const res = await fetch('/api/cambio/realtime', { cache: 'no-store' });
+    if(!res.ok) throw new Error('Proxy de cambio indisponivel');
+    const data = await res.json();
+    if(!data.ok || !data.rates) throw new Error(data.error || 'Resposta invalida do proxy');
+    return data;
+  }
+
+  function setCambioStatus(type, msg){
+    const el = document.getElementById('cambio-status');
+    if(!el) return;
+    if(!msg){ el.style.display='none'; el.textContent=''; return; }
+    const isErr = type === 'error';
+    el.style.display = 'block';
+    el.style.borderColor = isErr ? 'rgba(255,92,92,.28)' : 'rgba(255,184,77,.25)';
+    el.style.background = isErr ? 'rgba(255,92,92,.1)' : 'rgba(255,184,77,.1)';
+    el.style.color = isErr ? 'var(--red)' : 'var(--amber)';
+    el.textContent = msg;
+  }
+
+  function saveRatesCache(){
+    try{
+      localStorage.setItem(RATES_CACHE_KEY, JSON.stringify({
+        rates: ratesInBRL,
+        changes: ratesChangePct,
+        source: lastRateSource,
+        at: Date.now()
+      }));
+    }catch(e){}
+  }
+
+  function restoreRatesCache(){
+    try{
+      const cache = JSON.parse(localStorage.getItem(RATES_CACHE_KEY)||'null');
+      if(!cache || !cache.rates) return false;
+      Object.keys(ratesInBRL).forEach(k=>{ if(k!=='BRL') delete ratesInBRL[k]; });
+      Object.entries(cache.rates).forEach(([code,value])=>{
+        const n = parseFloat(value);
+        if(!isNaN(n)) ratesInBRL[code]=n;
+      });
+      ratesChangePct = {};
+      Object.entries(cache.changes||{}).forEach(([code,value])=>{
+        const n = parseFloat(value);
+        if(!isNaN(n)) ratesChangePct[code]=n;
+      });
+      lastFetch = Date.now();
+      const mins = cache.at ? Math.max(1, Math.round((Date.now()-cache.at)/60000)) : null;
+      setCambioStatus('error', `Nao consegui atualizar agora. Mostrando a ultima cotacao salva${mins ? ` ha ${mins} min` : ''}.`);
+      return Object.keys(ratesInBRL).length > 1;
+    }catch(e){ return false; }
+  }
+
   async function fetchRates(force){
     if(!force && Object.keys(ratesInBRL).length > 1 && Date.now()-lastFetch < 55000) return;
     try {
-      const syms  = MOEDAS.map(m=>m.code).join(',');
-      const pairs = MOEDAS.map(m=>`${m.code}-BRL`).join(',');
-      const [resAwe, resYest] = await Promise.all([
-        fetch(`https://economia.awesomeapi.com.br/json/last/${pairs}`),
-        fetch(`https://api.frankfurter.app/${daysAgo(2)}?from=BRL&to=${syms}`)
-      ]);
-      const awe  = await resAwe.json();
-      const yest = await resYest.json();
+      let proxyData = null;
+      try {
+        proxyData = await fetchRatesFromProxy();
+      } catch(eProxy) {}
+      let awe = null;
+      if(!proxyData){
+        const pairs = MOEDAS.map(m=>`${m.code}-BRL`).join(',');
+        const resAwe = await fetch(`https://economia.awesomeapi.com.br/json/last/${pairs}`);
+        if(!resAwe.ok) throw new Error('AwesomeAPI indisponivel');
+        awe = await resAwe.json();
+      }
 
       // Atualiza in-place para não quebrar referências
       Object.keys(ratesInBRL).forEach(k=>{ if(k!=='BRL') delete ratesInBRL[k]; });
-      MOEDAS.forEach(m => {
-        const key = `${m.code}BRL`;
-        if(awe[key]) ratesInBRL[m.code] = parseFloat(awe[key].bid);
-      });
+      ratesChangePct = {};
+      if(proxyData){
+        lastRateSource = proxyData.source || 'Proxy local';
+        Object.entries(proxyData.rates).forEach(([code, value]) => {
+          const n = parseFloat(value);
+          if(!isNaN(n)) ratesInBRL[code] = n;
+        });
+        Object.entries(proxyData.changes || {}).forEach(([code, value]) => {
+          const n = parseFloat(value);
+          if(!isNaN(n)) ratesChangePct[code] = n;
+        });
+      } else {
+        lastRateSource = 'AwesomeAPI';
+        MOEDAS.forEach(m => {
+          const key = `${m.code}BRL`;
+          if(awe[key]){
+            ratesInBRL[m.code] = parseFloat(awe[key].bid);
+            const pct = parseFloat(awe[key].pctChange);
+            if(!isNaN(pct)) ratesChangePct[m.code] = pct;
+          }
+        });
+      }
       // Re-injeta crypto se já estava carregado
       if(window._cryptoRatesInBRL){
         const cr = window._cryptoRatesInBRL();
         Object.entries(cr).forEach(([k,v])=>{ ratesInBRL[k]=v; });
       }
-
-      ratesYestInBRL = { BRL: 1 };
-      if(yest.rates) Object.entries(yest.rates).forEach(([k,v]) => { ratesYestInBRL[k] = 1/v; });
       lastFetch = Date.now();
+      saveRatesCache();
+      setCambioStatus('', '');
     } catch(e){
       try {
-        const syms = MOEDAS.map(m=>m.code).join(',');
-        const res = await fetch(`https://api.frankfurter.app/latest?from=BRL&to=${syms}`);
+        const res = await fetch('https://open.er-api.com/v6/latest/BRL');
         const data = await res.json();
+        if(data.result && data.result !== 'success') throw new Error('Fallback de cambio indisponivel');
         Object.keys(ratesInBRL).forEach(k=>{ if(k!=='BRL') delete ratesInBRL[k]; });
-        Object.entries(data.rates).forEach(([k,v]) => { ratesInBRL[k] = 1/v; });
+        ratesChangePct = {};
+        MOEDAS.forEach(m => {
+          const value = data.rates?.[m.code];
+          if(value) ratesInBRL[m.code] = 1 / value;
+        });
+        lastRateSource = 'open.er-api.com';
         lastFetch = Date.now();
-      } catch(e2){}
+        saveRatesCache();
+        setCambioStatus('warn', 'Fonte principal indisponivel. Usando cotacao de fallback; variacao pode ficar sem dados.');
+      } catch(e2){
+        restoreRatesCache();
+      }
     }
   }
 
   // Variação % entre hoje e ontem
   function getVar(code){
+    if(ratesChangePct[code] !== undefined) return ratesChangePct[code];
     const hoje = ratesInBRL[code];
     const ant  = ratesYestInBRL[code];
     if(!hoje || !ant) return null;
     return ((hoje - ant) / ant) * 100;
+  }
+
+  function getPairVar(code, base){
+    const codeVar = getVar(code);
+    if(base === 'BRL') return codeVar;
+    const baseVar = getVar(base);
+    if(codeVar === null || baseVar === null) return codeVar;
+    return (((1 + codeVar / 100) / (1 + baseVar / 100)) - 1) * 100;
   }
 
   function varTag(pct){
@@ -5028,6 +5179,8 @@ tr+tr td{border-top:1px solid #f3f3f3}
     const now = new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
     const lbl = document.getElementById('cambio-update-lbl');
     if(lbl) lbl.textContent = now;
+    const fonte = document.getElementById('cambio-fonte');
+    if(fonte && lastRateSource) fonte.textContent = `${lastRateSource} · atualizado ${now}`;
 
     // Moeda base = campo "De" do conversor
     const base = document.getElementById('conv-de')?.value || 'BRL';
@@ -5038,7 +5191,7 @@ tr+tr td{border-top:1px solid #f3f3f3}
         const rate = convert(1, m.code, base); // 1 moeda = X base
         const inv  = convert(1, base, m.code); // 1 base = X moeda
         if(!rate) return '';
-        const pct  = getVar(m.code);
+        const pct  = getPairVar(m.code, base);
         const up   = pct !== null && pct >= 0;
         const col  = pct === null ? 'var(--muted)' : up ? 'var(--green)' : 'var(--red)';
         const bg   = pct === null ? 'var(--s3)' : up ? 'rgba(0,200,150,.12)' : 'rgba(255,92,92,.12)';
@@ -5744,7 +5897,10 @@ tr+tr td{border-top:1px solid #f3f3f3}
     const unseen = h.filter(n=>!n.read).length;
     if(unseen > 0){
       const badge = document.getElementById('notif-badge');
-      if(badge) badge.classList.add('on');
+      if(badge){
+        badge.classList.add('on');
+        badge.textContent = unseen > 9 ? '9+' : unseen;
+      }
     }
   })();
 
@@ -6102,6 +6258,7 @@ tr+tr td{border-top:1px solid #f3f3f3}
       }
 
       await navigator.serviceWorker.ready;
+      if(window.updatePwaStatus) window.updatePwaStatus();
       syncAlerts();
       if(navigator.serviceWorker.controller){
         navigator.serviceWorker.controller.postMessage({type:'START_ALERT_CHECK'});
@@ -6112,7 +6269,6 @@ tr+tr td{border-top:1px solid #f3f3f3}
         const perm = await navigator.permissions.query({name:'periodic-background-sync'});
         if(perm.state === 'granted'){
           await _swReg.periodicSync.register('price-alerts', { minInterval: 5 * 60 * 1000 });
-          console.log('Periodic Background Sync registrado ✓');
         }
       } catch(e){}
 
@@ -6138,7 +6294,47 @@ tr+tr td{border-top:1px solid #f3f3f3}
     if(navigator.serviceWorker.controller){
       navigator.serviceWorker.controller.postMessage({type:'UPDATE_ALERTS', alerts});
     }
+    navigator.serviceWorker.ready.then(reg=>{
+      const worker = reg.active || reg.waiting || reg.installing;
+      if(worker) worker.postMessage({type:'UPDATE_ALERTS', alerts});
+    }).catch(()=>{});
   }
+
+  window.updatePwaStatus = async function(){
+    const grid = document.getElementById('pwa-status-grid');
+    const help = document.getElementById('pwa-status-help');
+    if(!grid || !help) return;
+    const isHttps = location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+    const isPages = /\.github\.io$/i.test(location.hostname);
+    const hasSw = 'serviceWorker' in navigator;
+    const notif = 'Notification' in window ? Notification.permission : 'indisponivel';
+    let controlled = false;
+    let swText = hasSw ? 'disponivel' : 'sem suporte';
+    if(hasSw && isHttps){
+      try{
+        const reg = await navigator.serviceWorker.getRegistration('./');
+        controlled = !!(navigator.serviceWorker.controller || reg?.active);
+        swText = controlled ? 'ativo' : 'registrando';
+      }catch(e){}
+    }
+    const items = [
+      ['Hospedagem', isPages ? 'GitHub Pages' : (location.protocol === 'file:' ? 'arquivo local' : 'web/local'), isPages || location.protocol !== 'file:'],
+      ['HTTPS/PWA', isHttps ? 'ok' : 'precisa HTTPS', isHttps],
+      ['Service worker', swText, controlled],
+      ['Notificacoes', notif === 'granted' ? 'permitidas' : notif, notif === 'granted'],
+    ];
+    grid.innerHTML = items.map(([label,value,ok])=>`
+      <div style="background:var(--s2);border:1px solid var(--border2);border-radius:10px;padding:9px 10px">
+        <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;font-weight:700">${label}</div>
+        <div style="margin-top:3px;font-size:12px;font-weight:700;color:${ok?'var(--green)':'var(--amber)'}">${ok?'●':'●'} ${value}</div>
+      </div>
+    `).join('');
+    help.textContent = isPages
+      ? 'Pronto para GitHub Pages: arquivos relativos, HTTPS e PWA habilitado. Se notificacoes nao chegarem, permita o site no navegador e instale o app na tela inicial.'
+      : (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
+        ? 'Ambiente local seguro para testes: service worker e notificacoes podem funcionar aqui. No GitHub Pages o app usa HTTPS automaticamente.'
+        : 'Para testar igual ao GitHub Pages, rode por localhost ou publique em HTTPS. Em file:// notificacoes e service worker ficam limitados.';
+  };
 
   // Recebe disparos do SW (app estava minimizado)
   navigator.serviceWorker.addEventListener('message', e => {
@@ -6163,6 +6359,7 @@ tr+tr td{border-top:1px solid #f3f3f3}
   });
 
   registerSW();
+  document.addEventListener('DOMContentLoaded',()=>{ if(window.updatePwaStatus) window.updatePwaStatus(); });
 })();
 </script>
 
@@ -6364,6 +6561,7 @@ Inclua: 1)📊 Perfil financeiro com os valores reais 2)🔴 Alertas usando os v
       : (window._tickerRatesOverride || {});
 
     const yest = window._getRatesYestInBRL?.() || {};
+    const changes = window._getRatesChangePct?.() || {};
     const crypto = window._cryptoRatesInBRL?.()  || {};
     const all    = {...rates, ...crypto};
 
@@ -6373,7 +6571,7 @@ Inclua: 1)📊 Perfil financeiro com os valores reais 2)🔴 Alertas usando os v
     const items = TICKER_ITEMS.map(item => {
       const price = all[item.code]; if(!price) return null;
       const prev  = yest[item.code];
-      const pct   = prev ? ((price - prev) / prev) * 100 : null;
+      const pct   = changes[item.code] !== undefined ? changes[item.code] : (prev ? ((price - prev) / prev) * 100 : null);
       const up    = pct !== null && pct >= 0;
       const pStr  = price >= 10000
         ? price.toLocaleString('pt-BR',{maximumFractionDigits:0})

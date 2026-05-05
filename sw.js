@@ -1,4 +1,4 @@
-const CACHE = 'controle-v1';
+const CACHE = 'controle-v3';
 const ASSETS = ['./', './index.html', './icon.svg'];
 
 // Instala e cacheia assets principais
@@ -23,6 +23,10 @@ self.addEventListener('fetch', e => {
   if(e.request.method !== 'GET') return;
   const url = new URL(e.request.url);
   if(url.origin !== location.origin) return;
+  if(url.pathname.includes('/api/')) {
+    e.respondWith(fetch(e.request));
+    return;
+  }
 
   e.respondWith(
     fetch(e.request)
@@ -82,7 +86,7 @@ async function checkAlerts() {
     if(triggered.length) {
       _alerts = updated;
       // Notifica clientes abertos
-      const clients = await self.clients.matchAll();
+      const clients = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
       clients.forEach(c => c.postMessage({ type: 'ALERTS_TRIGGERED', triggered, allAlerts: updated }));
       // Push notification se app fechado
       triggered.forEach(a => {
@@ -92,9 +96,24 @@ async function checkAlerts() {
           icon: './icon.svg',
           badge: './icon.svg',
           tag: `alert-${a.moeda}`,
+          data: { type: 'price-alert', moeda: a.moeda, alertId: a.id || null },
+          timestamp: Date.now(),
+          requireInteraction: true,
+          vibrate: [300, 120, 300, 120, 500],
           renotify: true,
         });
       });
     }
   } catch(e) {}
 }
+
+self.addEventListener('notificationclick', e => {
+  e.notification.close();
+  e.waitUntil((async () => {
+    const windows = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    for (const client of windows) {
+      if ('focus' in client) return client.focus();
+    }
+    if (self.clients.openWindow) return self.clients.openWindow('./');
+  })());
+});
