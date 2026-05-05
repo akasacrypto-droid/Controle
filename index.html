@@ -1853,6 +1853,13 @@ function toggleInstallment(prefix){
 
 /* ── AUDIO ENGINE ── */
 let audioCtx=null;
+let soundUnlocked=false;
+function unlockSound(){
+  soundUnlocked=true;
+  try{ if(audioCtx&&audioCtx.state==='suspended')audioCtx.resume(); }catch(e){}
+}
+document.addEventListener('pointerdown',unlockSound,{passive:true});
+document.addEventListener('keydown',unlockSound);
 function getAudio(){
   if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();
   return audioCtx;
@@ -1905,7 +1912,9 @@ function fmtS(v){return'R$'+Math.abs(v).toLocaleString('pt-BR',{minimumFractionD
 function parseMonthKey(monthKey){
   const m=String(monthKey||'');
   if(!/^\d{4}-\d{1,2}$/.test(m))return null;
-  const [y,mm]=m.split('-').map(Number);
+  const [rawY,rawM]=m.split('-');
+  const y=Number(rawY);
+  const mm=(rawM.startsWith('0') || Number(rawM)===12) ? Number(rawM)-1 : Number(rawM);
   if(!Number.isFinite(y)||!Number.isFinite(mm))return null;
   return {y,m:Math.max(0,Math.min(11,mm))};
 }
@@ -2031,11 +2040,23 @@ function parseCSVRow(line){
   out.push(cur);
   return out.map(v=>v.trim());
 }
+function monthKeyFromDateLike(v){
+  const s=String(v||'').trim();
+  let m=s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if(m) return `${Number(m[1])}-${Math.max(0,Math.min(11,Number(m[2])-1))}`;
+  m=s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if(m) return `${Number(m[3])}-${Math.max(0,Math.min(11,Number(m[2])-1))}`;
+  return null;
+}
 function normalizeMonthKey(monthRaw,idRaw){
   const m=String(monthRaw||'').trim();
   if(/^\d{4}-\d{1,2}$/.test(m)){
-    const [y,mm]=m.split('-').map(Number);
-    return `${y}-${Math.max(0,Math.min(11,mm))}`;
+    const [y,rawMm]=m.split('-');
+    const mm=Number(rawMm);
+    const dateMonth=monthKeyFromDateLike(idRaw);
+    if(rawMm.length===2 && !rawMm.startsWith('0') && mm!==12 && dateMonth?.startsWith(`${Number(y)}-`)) return dateMonth;
+    const monthIndex = (rawMm.startsWith('0') || mm===12) ? mm-1 : mm;
+    return `${Number(y)}-${Math.max(0,Math.min(11,monthIndex))}`;
   }
   const ts=Number(idRaw);
   if(Number.isFinite(ts)&&ts>0){
@@ -2044,6 +2065,16 @@ function normalizeMonthKey(monthRaw,idRaw){
   }
   return curKey();
 }
+function normalizeExistingTxMonths(){
+  let changed=false;
+  txData.forEach(tx=>{
+    if(!tx)return;
+    const fixed=normalizeMonthKey(tx.month,tx.id);
+    if(tx.month!==fixed){ tx.month=fixed; changed=true; }
+  });
+  if(changed)save();
+}
+normalizeExistingTxMonths();
 function txFingerprint(tx){
   const month=normalizeMonthKey(tx.month,tx.id);
   const type=tx.type==='income'?'income':'expense';
@@ -2202,7 +2233,7 @@ function addTx(){
   }
   save();closeSheet();render();
   checkDueNotifications();
-  if(sheetType==='income')soundIncome();else soundExpense();
+  if(canSound()){ if(sheetType==='income')soundIncome();else soundExpense(); }
   showToast(isInstallment&&instCount>=2?`✅ ${instCount} parcelas criadas`:t('toast.added'));
 }
 
@@ -2344,10 +2375,10 @@ function checkDueNotifications(){
         data:{type:'due',txId:tx.id}
       });
       delivered=true;
-      if(false)try{
+      /* Legacy Notification fallback removed:
         new Notification('⏰ Vencimento próximo',{body,icon:'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="20" fill="%23FFB020"/><text y=".9em" font-size="80">⏰</text></svg>'});
         delivered=true;
-      }catch(e){}
+      */
     }
     if(window.addNotifHistory){
       window.addNotifHistory({title:'⏰ Vencimento próximo',body,type:'due',time:Date.now(),daysLeft:days,dueDate:tx.dueDate});
@@ -2758,7 +2789,7 @@ function toggleSound(){
   showToast(on?'Sons ativados 🔊':'Sons desativados 🔇');
   if(on)soundSave();
 }
-function canSound(){return localStorage.getItem('fin_sound')!=='0'}
+function canSound(){return soundUnlocked&&localStorage.getItem('fin_sound')!=='0'}
 function initNotif(){
   const saved=localStorage.getItem('fin_notif')==='1';
   const savedTime=localStorage.getItem('fin_notif_time')||'20:00';
@@ -7193,7 +7224,7 @@ document.addEventListener('DOMContentLoaded',function(){
   const LISTS_KEY='_fin_mkt_lists'; // chaves de listas disponíveis
   
   let _currentList='default'; // lista ativa
-  let _mktItems=JSON.parse(localStorage.getItem(MKT_KEY)||'[]');
+  let _mktItems=JSON.parse(localStorage.getItem(MKT_KEY+'_default')||localStorage.getItem(MKT_KEY)||'[]');
   let _mktHist=JSON.parse(localStorage.getItem(HIST_KEY)||'[]');
   let _mktLists=JSON.parse(localStorage.getItem(LISTS_KEY)||'["default"]'); // lista de listas
   let _mktEditId=null; // id do item sendo editado
@@ -7239,9 +7270,15 @@ document.addEventListener('DOMContentLoaded',function(){
 
   /* ── Selecionar Lista ── */
   window.mktSelectList=function(listId){
+    if(_currentList===listId){
+      _mktItems=JSON.parse(localStorage.getItem(MKT_KEY+'_'+listId)||localStorage.getItem(MKT_KEY)||'[]');
+      mktRenderListSelector();
+      mktRender();
+      return;
+    }
     // Se clicar na lista que já está selecionada, desseleciona
     if(_currentList===listId){
-      _currentList=null;
+      _currentList=listId;
       document.querySelectorAll('#mkt-list-selector .cat-chip').forEach(b=>b.classList.remove('on'));
       document.querySelectorAll('#mkt-list-selector .cat-chip').forEach(b=>{
         b.style.background='';
@@ -7249,7 +7286,7 @@ document.addEventListener('DOMContentLoaded',function(){
         b.style.color='';
         b.style.fontWeight='';
       });
-      _mktItems=[];
+      _mktItems=JSON.parse(localStorage.getItem(MKT_KEY+'_'+listId)||localStorage.getItem(MKT_KEY)||'[]');
       mktRender();
       return;
     }
@@ -7876,7 +7913,10 @@ document.addEventListener('DOMContentLoaded',function(){
   }
 
   function _esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-  function _save(){ localStorage.setItem(MKT_KEY,JSON.stringify(_mktItems)); }
+  function _save(){
+    if(_currentList) localStorage.setItem(MKT_KEY+'_'+_currentList,JSON.stringify(_mktItems));
+    if(_currentList==='default') localStorage.setItem(MKT_KEY,JSON.stringify(_mktItems));
+  }
 
   // Enter para adicionar
   document.addEventListener('DOMContentLoaded',function(){
